@@ -23,6 +23,11 @@
   url = "#publications"
   weight = 40
 
+[[main]]
+  name = "PPCB"
+  url = "https://jelsema.github.io/ppcb/"
+  weight = 50
+
 #[[main]]
 #  name = "Courses"
 #  url = "courses/"

@@ -50,20 +50,17 @@ subtitle = ""
 
 
 
-
 I hail from Michigan, home of numerous excellent breweries including (but not limited to!)
 [Founders](https://foundersbrewing.com/), 
 [New Holland](https://www.newhollandbrew.com/), and 
-[Bell's](www.bellsbeer.com/).
+[Bell's](www.bellsbeer.com/). I attended [Grand Valley State University](https://www.gvsu.edu/stat/) for a degree in Statistics. followed by graduate school at [Western Michigan University](https://wmich.edu/statistics), where I ultimately earned both a MS and PhD. 
 
-I attended [Grand Valley State University](https://www.gvsu.edu/stat/) for a degree in Statistics. While there I developed an appreciation for the general process of learning from data. I also learned and enjoyed working with the SAS programming language (I've since repented). I knew I wanted to get a graduate degree, so after finishing my BS I started at [Western Michigan University](https://wmich.edu/statistics), ultimately earning both a MS and PhD.
+[Rajib Paul](https://publichealth.uncc.edu/directory/rajib-paul) (now at UNC-Charlotte) directed my dissertation which was, broadly speaking, on the topic of methods for large geostatistical datasets that do not follow Normality. I have implemented some of the methods in an very-much-incomplete **R** package [RRSM](https://github.com/jelsema/RRSM).
 
-While there, I took a course on Spatial statistics from my future PhD advisor [Rajib Paul](https://publichealth.uncc.edu/directory/rajib-paul) (now at UNC-Charlotte). I really enjoyed the idea of spatial data, and have kept a toe in those waters ever since. My dissertation was, broadly speaking, on the topic of methods for large geostatistical datasets that do not follow Normality. I have implemented some of the methods in an very-much-incomplete **R** package [RRSM](https://github.com/jelsema/RRSM).
+After finishing my PhD [Shyamal Peddada](https://www.publichealth.pitt.edu/home/directory/shyamal-peddada) (now at University of Pittsburgh) offered my as postdoctoral research position at the National Institute of Environmental Health Sciences. We worked on some spatial methods (in particular, [Threshold Knot Selection](https://jelsema.github.io/publication/2019-threshold-knots/)), but he also introduced me to the area of order-restricted inference. With him I wrote the R package [CLME](https://github.com/jelsema/CLME), which implements a constrained linear mixed effects model using nonparametric bootstrap for inference.
 
-After finishing my PhD I was fortunate to be offered a post-doctoral position at the National Institute of Environmental Health Sciences by [Shyamal Peddada](https://www.publichealth.pitt.edu/home/directory/shyamal-peddada) (now at University of Pittsburgh). With Shyamal I continued working on some spatial methods (in particular, [Threshold Knot Selection](https://jelsema.github.io/publication/2019-threshold-knots/)), but he also introduced me to the area of order-restricted inference. With him I wrote the R package [CLME](https://github.com/jelsema/CLME), which implements a constrained linear mixed effects model using nonparametric bootstrap for inference.
+After my post-doc, I was an assistant professor at West Virginia University. While there I  worked with researchers in a variety of disciplines including Forensics, Geography, and Medicine. For various reasons, I left academia and joined a research lab where I am in a Statistics group assisting mostly engineers who are working on interesting and important projects.
 
-Since August 2015, I have been an assistant professor at West Virginia University. Here I've connected with and been able to collaborate with researchers in a variety of disciplines including Forensics, Geography, and medicine. 
-I get to teach practical data analysis techniques through R, and I get to work on whatever statistical methodology I want, as well as analyze real data with other professors or their grad students.
 
 
 

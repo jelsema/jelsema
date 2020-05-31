@@ -18,17 +18,29 @@ date_format = "Jan 2006"
 #   Leave `date_end` empty if it's your current employer.
 #   Begin/end multi-line descriptions with 3 quotes `"""`.
 [[experience]]
+  title = "Statistician"
+  company = "A well-known engineering lab"
+  company_url = ""
+  location = ""
+  date_start = "2020-01-13"
+  date_end = ""
+  description = """
+  Primary Responsibilities:<br>
+  - Consulting with Engineers and a smattering of other scientists
+  - Research on Statistical methods
+  """
+  
+[[experience]]
   title = "Assistant Professor"
   company = "West Virginia University"
   company_url = ""
   location = "West Virginia"
   date_start = "2015-08-01"
-  date_end = ""
+  date_end = "2019-12-20"
   description = """
   Primary Responsibilities:<br>
   - Teaching 2 courses / semester<br>
-  - Research (Statistical methods and collaborative)
-  """
+  - Research (Statistical methods and collaborative)"""
 
 [[experience]]
   title = "Postdoctoral Research Fellow"

@@ -42,5 +42,5 @@ user_groups:
 - Visitors
 ---
 
-I'm a Statistician, currently working as an Assistant Professor of Biostatistics at West Virginia University. My main research interests are spatial statistics and statistical computing, but I also enjoy playing in everyone else's backyard (i.e. collaborations). The backyards I tend to play in most are Forensics and medical applications. I know, that's kind of broad. But working on the health science campus of a university tends to lead to more researchers in search of statistical help than those who can provide it.
+I'm a Statistician, currently working as part of a statistics group supporting an engineering research lab. My main research interests are spatial statistics and statistical computing, but I also enjoy "playing in everyone else's backyard" (i.e. collaborations). Some of the backyards I've played in - from my previous gig as an assistant professor at West Virginia University - include Forensics and medical applications.
 
