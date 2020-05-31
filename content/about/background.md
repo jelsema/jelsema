@@ -59,7 +59,9 @@ I hail from Michigan, home of numerous excellent breweries including (but not li
 
 After finishing my PhD [Shyamal Peddada](https://www.publichealth.pitt.edu/home/directory/shyamal-peddada) (now at University of Pittsburgh) offered my as postdoctoral research position at the National Institute of Environmental Health Sciences. We worked on some spatial methods (in particular, [Threshold Knot Selection](https://jelsema.github.io/publication/2019-threshold-knots/)), but he also introduced me to the area of order-restricted inference. With him I wrote the R package [CLME](https://github.com/jelsema/CLME), which implements a constrained linear mixed effects model using nonparametric bootstrap for inference.
 
-After my post-doc, I was an assistant professor at West Virginia University. While there I  worked with researchers in a variety of disciplines including Forensics, Geography, and Medicine. For various reasons, I left academia and joined a research lab where I am in a Statistics group assisting mostly engineers who are working on interesting and important projects.
+After my post-doc, I was an assistant professor at West Virginia University. While there I  worked with researchers in a variety of disciplines including Forensics, Geography, and Medicine. 
+
+For various reasons, I left academia and joined a research lab where I am in a Statistics group assisting mostly engineers who are working on interesting and important projects.
 
 
 

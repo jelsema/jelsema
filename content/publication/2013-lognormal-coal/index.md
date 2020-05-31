@@ -24,7 +24,7 @@ tags:
 title: Lognormal block kriging with applications to goal geology
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.sciencedirect.com/science/article/abs/pii/S0166516213001110?via%3Dihub"
 url_poster: ""
 url_project: ""
 url_slides: ""

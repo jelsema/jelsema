@@ -25,7 +25,7 @@ tags:
 title: Threshold knot selection for large-scale spatial models with applications to the Deepwater Horizon disaster
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.tandfonline.com/doi/abs/10.1080/00949655.2019.1610884"
 url_poster: ""
 url_project: ""
 url_slides: ""

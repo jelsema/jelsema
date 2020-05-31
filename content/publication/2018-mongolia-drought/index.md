@@ -35,7 +35,7 @@ tags:
 title: Past and future drought in Mongolia
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://advances.sciencemag.org/content/4/3/e1701832"
 url_poster: ""
 url_project: ""
 url_slides: ""

@@ -27,7 +27,7 @@ tags:
 title: Testing for Inequality Constraints in Singular Models by Trimming or Winsorizing the Variance Matrix
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.tandfonline.com/doi/abs/10.1080/01621459.2017.1301258?journalCode=uasa20"
 url_poster: ""
 url_project: ""
 url_slides: ""

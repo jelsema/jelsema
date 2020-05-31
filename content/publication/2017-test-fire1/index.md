@@ -28,7 +28,7 @@ tags:
 title: Determining the number of test fires needed to represent the variability present within 9mm Luger firearms
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.sciencedirect.com/science/article/pii/S0379073817301561?via%3Dihub"
 url_poster: ""
 url_project: ""
 url_slides: ""

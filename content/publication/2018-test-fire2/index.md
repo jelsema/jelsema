@@ -28,7 +28,7 @@ tags:
 title: Determining the number of test fires needed to represent the variability present within firearms of various calibers
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.sciencedirect.com/science/article/pii/S037907381830330X?via%3Dihub"
 url_poster: ""
 url_project: ""
 url_slides: ""

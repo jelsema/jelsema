@@ -25,7 +25,7 @@ tags:
 title: 'CLME An R package for linear mixed effects models under inequality constraints'
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.jstatsoft.org/index.php/jss/article/view/v075i01/v75i01.pdf"
 url_poster: ""
 url_project: ""
 url_slides: ""

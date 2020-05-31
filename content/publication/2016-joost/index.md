@@ -30,7 +30,7 @@ tags:
 title: 'Reinterpreting the best biomarker of oxidative stress: The 8-iso-prostaglandin F2α/prostaglandin F2α ratio shows complex origins of lipid peroxidation biomarkers in animal models'
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.sciencedirect.com/science/article/abs/pii/S0891584916000976?via%3Dihub"
 url_poster: ""
 url_project: ""
 url_slides: ""

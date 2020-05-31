@@ -26,7 +26,7 @@ tags:
 title: Robust estimation of reduced rank models to large spatial datasets
 url_code: ""
 url_dataset: ""
-url_pdf: ""
+url_pdf: "https://www.ine.pt/revstat/pdf/REVSTAT_v18-n2-5.pdf"
 url_poster: ""
 url_project: ""
 url_slides: ""
