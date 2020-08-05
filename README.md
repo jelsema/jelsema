@@ -8,9 +8,9 @@ The website can be found at [jelsema.github.io](https://jelsema.github.io)
 
 
 	library("blogdown")
+	
+	
 	blogdown::build_site()
-	
-	
 	blogdown::serve_site()
 
 
