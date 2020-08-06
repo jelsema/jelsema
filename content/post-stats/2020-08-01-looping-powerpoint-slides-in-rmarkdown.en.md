@@ -25,7 +25,7 @@ projects: []
 
 
 
-![title-image](img/looping-pp-slides.png)
+![title-image](../../img/looping-pp-slides.png)
 
 
 ## Preface

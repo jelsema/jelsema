@@ -22,7 +22,7 @@ projects: []
 ---
 
 
-![title-image](img/evidence-hierarchy.jpeg)
+![title-image](../../img/evidence-hierarchy.jpeg)
 
 
 ## The short version
