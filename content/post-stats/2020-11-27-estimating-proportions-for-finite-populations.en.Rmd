@@ -56,7 +56,7 @@ P(X = k) = \dfrac{\binom{M}{k}\binom{N-M}{n-k}}{\binom{N}{n}}
 $$
 
 
-where $k \in \left( \max(0,n+M-N)$ and
+where $k \in \max(0,n+M-N)$ and
 
 - $N$ is the size of the population.
 - $M$ is the number of successes (or whatever event of interest) in the population.
@@ -153,7 +153,7 @@ DiagrammeR::grViz("digraph {
   graph [layout = dot, rankdir = LR]
 
   node [shape = rectangle, style = filled, fillcolor = lightblue]
-  A [label = 'Superpopulation\n\n𝜋', shape = circle, width=3, fontsize=28]
+  A [label = 'Superpopulation\n\npi', shape = circle, width=3, fontsize=28]
   
   
   subgraph cluster_population {
@@ -184,7 +184,6 @@ Jones & Johnson (2015) tell that inference about $U = M-x$ (from which we can de
 
 $$
 P(U=k) = \binom{N}{k} \dfrac{B\left(k+\alpha, N-k+\beta \right)}{B\left(\alpha, \beta \right)},
-
 $$
 
 where $B(\cdot,\cdot)$ is the Beta function (a core feature of the [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution)). It will be useful to see the form of this:
@@ -243,7 +242,6 @@ f(U|k) &= \int_{0}^{1} f(U|\pi) f(\pi|k)f(\pi|k) d\pi \\
 &= \binom{N-n}{u}\dfrac{1}{B(\alpha^{*}, \beta^{*})}  
    \int_{0}^{1} \pi^{u+\alpha^{*}-1}(1-\pi)^{N-n-u+\beta^{*}-1}   d\pi
 \end{aligned}
-
 $$
 
 If you look back to the definition of the Beta function, you'll note that the integral here is exactly that, so we can simplify this to:
@@ -254,7 +252,6 @@ $$
 f(U|k) &= \binom{N-n}{u}\dfrac{1}{B(\alpha^{*}, \beta^{*})}  
           B( u + \alpha^{*}, N-n-u+\beta^{*})
 \end{aligned}
-
 $$
 
 This, we can note, is precisely the form of the Beta-binomial distribution. So we can say that:

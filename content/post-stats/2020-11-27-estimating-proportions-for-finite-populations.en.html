@@ -38,7 +38,7 @@ projects: []
 <p><span class="math display">\[
 P(X = k) = \dfrac{\binom{M}{k}\binom{N-M}{n-k}}{\binom{N}{n}}
 \]</span></p>
-<p>where <span class="math inline">\(k \in \left( \max(0,n+M-N)\)</span> and</p>
+<p>where <span class="math inline">\(k \in \max(0,n+M-N)\)</span> and</p>
 <ul>
 <li><span class="math inline">\(N\)</span> is the size of the population.</li>
 <li><span class="math inline">\(M\)</span> is the number of successes (or whatever event of interest) in the population.</li>
@@ -94,12 +94,12 @@ V[X/n] = \sigma^{2}_{p} &amp;= \dfrac{1}{n} \dfrac{M}{N} \dfrac{N-M}{N} \dfrac{N
 <p>Clear as mud, right? I think of it this way: We have a population of <span class="math inline">\(N\)</span> units, of which <span class="math inline">\(K\)</span> are defectives (and so there is proportion <span class="math inline">\(p\)</span> defectives). But we can consider a more general process from which our population was drawn. In this more general “superpopulation” there is some underlying proportion of defectives, which we will denote <span class="math inline">\(\pi\)</span>. With this framework, we can consider the population as being a sample of size <span class="math inline">\(N\)</span> from the superpopulation.</p>
 <p>The next important bit of this is that we separate the population into the <em>observed</em> and <em>unobserved</em> samples. These are effectively two independent samples from a Binomial distribution, of sizes <span class="math inline">\(n\)</span> and <span class="math inline">\(N-n\)</span>, respectively. The diagram below is how I picture it.</p>
 <div id="htmlwidget-1" style="width:672px;height:480px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-1">{"x":{"diagram":"digraph {\n  graph [layout = dot, rankdir = LR]\n\n  node [shape = rectangle, style = filled, fillcolor = lightblue]\n  A [label = \"Superpopulation\n\n<U+0001D70B>\", shape = circle, width=3, fontsize=28]\n  \n  \n  subgraph cluster_population {\n    style=dotted; label=\"Population\"; fontsize=24;\n    node [shape = rectangle, style = filled, fillcolor = lightblue, width=2]\n  { \n    B [label = \"Observed Sample\n\nx, n\", shape = circle, fontsize=20]\n    C [label = \"Unobserved Sample\n\nM-x, N-n\", shape = circle, fontsize=20]\n  }\n  };\n\n  # edge definitions with the node IDs\n  A -> B \n  A -> C \n  B -> A [style=dashed]\n  A -> C [style=dashed]\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"diagram":"digraph {\n  graph [layout = dot, rankdir = LR]\n\n  node [shape = rectangle, style = filled, fillcolor = lightblue]\n  A [label = \"Superpopulation\n\npi\", shape = circle, width=3, fontsize=28]\n  \n  \n  subgraph cluster_population {\n    style=dotted; label=\"Population\"; fontsize=24;\n    node [shape = rectangle, style = filled, fillcolor = lightblue, width=2]\n  { \n    B [label = \"Observed Sample\n\nx, n\", shape = circle, fontsize=20]\n    C [label = \"Unobserved Sample\n\nM-x, N-n\", shape = circle, fontsize=20]\n  }\n  };\n\n  # edge definitions with the node IDs\n  A -> B \n  A -> C \n  B -> A [style=dashed]\n  A -> C [style=dashed]\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>In this, a solid arrow denotes the random sampling, and a dashed arrow denotes inference. So from the superpopulation we sample the population, but we conceptualize two independent samples: One which we observe, and the other which we do not. Then the <em>observed</em> sample is used to infer about the superpopulation, and that information about the superpopulation is used to make probabalistic statements about the unobserved sample - that is: The rest of the population.</p>
 <p>Jones &amp; Johnson (2015) tell that inference about <span class="math inline">\(U = M-x\)</span> (from which we can derive <span class="math inline">\(M\)</span>, and therefore <span class="math inline">\(p\)</span>) will make use of a <a href="https://en.wikipedia.org/wiki/Beta-binomial_distribution">Beta-binomial distribution</a>, which I’ll denote <span class="math inline">\(betabin( N, \alpha, \beta)\)</span>. This distribution has the following PDF:</p>
-<p>$$
-P(U=k) =  ,</p>
-<p>$$</p>
+<p><span class="math display">\[
+P(U=k) = \binom{N}{k} \dfrac{B\left(k+\alpha, N-k+\beta \right)}{B\left(\alpha, \beta \right)},
+\]</span></p>
 <p>where <span class="math inline">\(B(\cdot,\cdot)\)</span> is the Beta function (a core feature of the <a href="https://en.wikipedia.org/wiki/Beta_distribution">Beta distribution</a>). It will be useful to see the form of this:</p>
 <p><span class="math display">\[
 B\left(\alpha, \beta \right) = \int_{0}^{1} x^{\alpha-1} (1-x)^{\beta-1} dx
@@ -130,25 +130,25 @@ f(U) = \int_{0}^{1} f(U|\pi) f(\pi)d\pi
 f(U|k) = \int_{0}^{1} f(U|\pi) f(\pi|k) d\pi
 \]</span></p>
 <p>This allows us to take advantage of what <span class="math inline">\(k\)</span> and <span class="math inline">\(n\)</span> told us about <span class="math inline">\(\pi\)</span>. The dependence on <span class="math inline">\(k\)</span> gets “inherited” from <span class="math inline">\(f(\pi|k)\)</span>. The math is below, though for ease of notation, I’m going to write <span class="math inline">\(\alpha^{*}=k+\alpha\)</span> and <span class="math inline">\(\beta^{*} = n-k+\beta\)</span>.</p>
-<p>$$
+<p><span class="math display">\[
 \begin{aligned}
-f(U|k) &amp;= <em>{0}^{1} f(U|) f(|k)f(|k) d\
-&amp; \
-&amp;= </em>{0}^{1}  <sup>{u}(1-)</sup>{N-n-u} 
-<sup>{</sup>{<em>}-1} (1-)<sup>{</sup>{</em>}-1} d
-&amp; \
-&amp;\
-&amp;= <br />
-_{0}^{1} <sup>{u+</sup>{<em>}-1}(1-)<sup>{N-n-u+</sup>{</em>}-1} d
-\end{aligned}</p>
-<p>$$</p>
+f(U|k) &amp;= \int_{0}^{1} f(U|\pi) f(\pi|k)f(\pi|k) d\pi \\
+&amp; \\
+&amp;= \int_{0}^{1} \binom{N-n}{u} \pi^{u}(1-\pi)^{N-n-u} \dfrac{1}{B(\alpha^{*}, \beta^{*})} 
+   \pi^{\alpha^{*}-1} (1-\pi)^{\beta^{*}-1} d\pi
+&amp; \\
+&amp;\\
+&amp;= \binom{N-n}{u}\dfrac{1}{B(\alpha^{*}, \beta^{*})}  
+   \int_{0}^{1} \pi^{u+\alpha^{*}-1}(1-\pi)^{N-n-u+\beta^{*}-1}   d\pi
+\end{aligned}
+\]</span></p>
 <p>If you look back to the definition of the Beta function, you’ll note that the integral here is exactly that, so we can simplify this to:</p>
-$$
-<span class="math display">\[\begin{aligned}
+<p><span class="math display">\[
+\begin{aligned}
 f(U|k) &amp;= \binom{N-n}{u}\dfrac{1}{B(\alpha^{*}, \beta^{*})}  
           B( u + \alpha^{*}, N-n-u+\beta^{*})
-\end{aligned}\]</span>
-<p>$$</p>
+\end{aligned}
+\]</span></p>
 <p>This, we can note, is precisely the form of the Beta-binomial distribution. So we can say that:</p>
 <p><span class="math display">\[
 U|k \sim \mbox{betabinomial}( N-n, k+\alpha, n-k+\beta)
