@@ -1,0 +1,194 @@
+---
+title: Estimating proportions for finite populations
+author: Casey
+date: '2021-06-10'
+slug: estimating-proportions-for-finite-populations
+categories:
+  - stat101
+  - methods
+  - lecture
+tags:
+  - categorical
+  - proportion
+  - hypergeometric
+  - rare events
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2020-11-27T08:44:07-07:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="/rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
+<script src="/rmarkdown-libs/viz/viz.js"></script>
+<link href="/rmarkdown-libs/DiagrammeR-styles/styles.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/grViz-binding/grViz.js"></script>
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>In a <a href="https://jelsema.github.io/post-stats/estimating-binomial-proportions/">previous post</a> I talked about estimating a binomial proportion, including for rare events. The reason I wrote that was for background to this post. Here, we’ll again be looking at estimating proportions - and can include rare events - but with an added wrinkle: A population that is finite.</p>
+<p>In the Binomial case, every observation is assumed to be independent and have a fixed probability of the outcome of interest (a “success” or a “failure”). But when the population is finite, then the probability of success changes. One of the quintessential examples is dealing cards from a well-shuffled standard deck without replacement (that is: draw the card, and don’t put it back). Say we’re interested in the probability of getting a spade. On the first draw, this is 13/52. But the second card is either 13/51 (if the first card was not a spade) or 12/51 (if the first card was a spade), neither of which are the same as 13/52.</p>
+<p>Sampling binary outcomes (e.g., “spade” vs “not a spade”) from a finite population gives rise to the <a href="https://en.wikipedia.org/wiki/Hypergeometric_distribution">hypergeometric distribution</a>. This is defined as:</p>
+<p><span class="math display">\[
+P(X = k) = \dfrac{\binom{M}{k}\binom{N-M}{n-k}}{\binom{N}{n}}
+\]</span></p>
+<p>where <span class="math inline">\(k \in \left( \max(0,n+M-N)\)</span> and</p>
+<ul>
+<li><span class="math inline">\(N\)</span> is the size of the population.</li>
+<li><span class="math inline">\(M\)</span> is the number of successes (or whatever event of interest) in the population.</li>
+<li><span class="math inline">\(n\)</span> is the number of samples taken.</li>
+<li><span class="math inline">\(k\)</span> is the number of successes in the sample.</li>
+</ul>
+<p>What this is doing is just counting the number of ways, when drawing <span class="math inline">\(n\)</span> samples, to get <span class="math inline">\(k\)</span> successes.</p>
+<p>The same situation arises in other - very practical - scenarios.</p>
+<p>Cars have a specific year and model. Once the next “year-model” starts, no more of the previous year’s version can be manufactured. Hence, there are a finite number of, say, 2011 Chevy Cruzes available. If a problem is detected with that year-model, then the number of 2011 Chevy Cruzes which have this problem will follow a hypergeometric distribution.</p>
+<p>For example, my own vehicle was subject to the <a href="https://en.wikipedia.org/wiki/Takata_Corporation#Recalls">Takata Corp</a> airbag recall. From that wiki page, I found there were recalls of <a href="https://en.wikipedia.org/wiki/Chevrolet_Cruze#Reliability_and_recalls">Chevy Cruze</a> models as well.</p>
+<p>Generalizing this idea, many components are manufactured in “batches” of some sort. That could be particular <a href="see%20General%20Mills,%202019">date(s) of production</a> or <a href="https://www.npr.org/2020/11/06/929078678/cdc-report-officials-knew-coronavirus-test-was-flawed-but-released-it-anyway">batchs</a> of raw materials. Additionally, there could be errors in the manufacturing or assembly which could potentially affect some but not all of the units produced on that day.</p>
+</div>
+<div id="estimation" class="section level2">
+<h2>Estimation</h2>
+<p>When the population is finite, there are generally two possible questions of interest. Looking at the parameters of the hypergeometric distribution, this should become relatively clear: Since <span class="math inline">\(x\)</span> and <span class="math inline">\(n\)</span> are values from the <em>sample</em> (which is <em>observed</em>), they are fully known and not subject to uncertainty. Instead, either <span class="math inline">\(M\)</span> or <span class="math inline">\(N\)</span> will be the unknown quantity (hopefully not both!). In this post, I’m going to focus on the former, so the scenario can be phrased as:</p>
+<blockquote>
+<p>For a population of size <span class="math inline">\(N\)</span>, we take a sample of size <span class="math inline">\(n\)</span> and observe <span class="math inline">\(x\)</span> defective units. Our goal is to estimate <span class="math inline">\(M\)</span>, the <em>total</em> number of defective units.</p>
+</blockquote>
+<p>With a finite population, interest in the total number of defectives is directly related to interest in the population proportion of defectives. If we have <span class="math inline">\(M\)</span> defectives in a population of size <span class="math inline">\(N\)</span>, then the population proportion of defectives is <span class="math inline">\(p = M/N\)</span>. So if we estimate <span class="math inline">\(M\)</span> (perhaps with some interval bounds) we can easily convert to a proportion by dividing by the non-random population size <span class="math inline">\(N\)</span>. We could also go the other way, but <span class="math inline">\(p\)</span> is more interpretable than <span class="math inline">\(M\)</span>, so it’s more natural to put results in terms of <span class="math inline">\(p\)</span>.</p>
+<p>So how do we estimate the proportion? As with the case of infinite populations I discussed in my <a href="https://jelsema.github.io/post-stats/estimating-binomial-proportions/">previous post</a>, there are several approaches. One of them is the same as the “typical” approach: Divide the observed number of defectives by the sample size, <span class="math inline">\(\hat{p} = k/n\)</span>.</p>
+<p>A wrinkle in this, however, is that when the population is finite, the samples are not independent, there is some covariance. As a result of this, the standard errors from before are no longer correct. One way of addressing this is through what’s called the Finite Population Correction Factor (FPCF).</p>
+<div id="finite-population-correction-factor" class="section level3">
+<h3>Finite population correction factor</h3>
+<p>I think the “easy” way to see how the FPCF come about is to look at the mean and variance of the hypergeometric distribution. These are:</p>
+<p><span class="math display">\[
+\begin{aligned}
+E[X] = \mu &amp;= n \dfrac{M}{N} \\
+ &amp; \\
+V[X] = \sigma^{2} &amp;= n \dfrac{M}{N} \dfrac{N-M}{N} \dfrac{N-n}{N-1}  
+\end{aligned}
+\]</span></p>
+<p>Remember that the hypergeometric distribution is dealing with the <em>number</em> of successes (in our case, defective units), so we take <span class="math inline">\(X/n\)</span> to deal with the proportion. This factor of <span class="math inline">\(1/n\)</span> gets squared in the variance, so we have:</p>
+<p><span class="math display">\[
+\begin{aligned}
+E[X/n] = p &amp;= \dfrac{M}{N} \\
+ &amp; \\
+V[X/n] = \sigma^{2}_{p} &amp;= \dfrac{1}{n} \dfrac{M}{N} \dfrac{N-M}{N} \dfrac{N-n}{N-1}  
+\end{aligned}
+\]</span></p>
+<p>Dividing the number of defects by the sample size gets us the proportion, so in the expected value, this becomes the population proportion, <span class="math inline">\(p = M/N\)</span>, which makes sense. If we rewrite the variance in terms of <span class="math inline">\(p\)</span>, we get:</p>
+<p><span class="math display">\[
+\sigma^{2}_{p} = \dfrac{1}{n} p(1-p) \dfrac{N-n}{N-1} = \dfrac{p(1-p)}{n} \left(\dfrac{N-n}{N-1}\right)
+\]</span></p>
+<p>This expression looks very close to the “ordinary” version of the standard error of <span class="math inline">\(\hat{p}\)</span> when sampling from a Binomial distribution. There’s just an extra bit that the variance is getting multiplied by. This is the FPCP:</p>
+<p><span class="math display">\[
+\mbox{FPCP} = \dfrac{N-n}{N-1}
+\]</span></p>
+<p>There is another derivation of this for a more general case (just assuming a mean and a variance), but it’s fairly long, so I don’t want to get side-tracked with that.</p>
+</div>
+<div id="bayesian-estimation" class="section level3">
+<h3>Bayesian estimation</h3>
+<p>As before, I’ve been interested in the Bayesian approach to this problem. There’s a paper by <a href="https://link.springer.com/article/10.1007/s13253-015-0239-9">Jones &amp; Johnson (2015)</a> that talks about this (as a precursor to a more complex idea). In section 2 of their paper, they have a nice summary of the approach using a concept called <em>superpopulation</em>. This is a way of describing a theoretical population from which our population is drawn.</p>
+<p>Clear as mud, right? I think of it this way: We have a population of <span class="math inline">\(N\)</span> units, of which <span class="math inline">\(K\)</span> are defectives (and so there is proportion <span class="math inline">\(p\)</span> defectives). But we can consider a more general process from which our population was drawn. In this more general “superpopulation” there is some underlying proportion of defectives, which we will denote <span class="math inline">\(\pi\)</span>. With this framework, we can consider the population as being a sample of size <span class="math inline">\(N\)</span> from the superpopulation.</p>
+<p>The next important bit of this is that we separate the population into the <em>observed</em> and <em>unobserved</em> samples. These are effectively two independent samples from a Binomial distribution, of sizes <span class="math inline">\(n\)</span> and <span class="math inline">\(N-n\)</span>, respectively. The diagram below is how I picture it.</p>
+<div id="htmlwidget-1" style="width:672px;height:480px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"diagram":"digraph {\n  graph [layout = dot, rankdir = LR]\n\n  node [shape = rectangle, style = filled, fillcolor = lightblue]\n  A [label = \"Superpopulation\n\n<U+0001D70B>\", shape = circle, width=3, fontsize=28]\n  \n  \n  subgraph cluster_population {\n    style=dotted; label=\"Population\"; fontsize=24;\n    node [shape = rectangle, style = filled, fillcolor = lightblue, width=2]\n  { \n    B [label = \"Observed Sample\n\nx, n\", shape = circle, fontsize=20]\n    C [label = \"Unobserved Sample\n\nM-x, N-n\", shape = circle, fontsize=20]\n  }\n  };\n\n  # edge definitions with the node IDs\n  A -> B \n  A -> C \n  B -> A [style=dashed]\n  A -> C [style=dashed]\n\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<p>In this, a solid arrow denotes the random sampling, and a dashed arrow denotes inference. So from the superpopulation we sample the population, but we conceptualize two independent samples: One which we observe, and the other which we do not. Then the <em>observed</em> sample is used to infer about the superpopulation, and that information about the superpopulation is used to make probabalistic statements about the unobserved sample - that is: The rest of the population.</p>
+<p>Jones &amp; Johnson (2015) tell that inference about <span class="math inline">\(U = M-x\)</span> (from which we can derive <span class="math inline">\(M\)</span>, and therefore <span class="math inline">\(p\)</span>) will make use of a <a href="https://en.wikipedia.org/wiki/Beta-binomial_distribution">Beta-binomial distribution</a>, which I’ll denote <span class="math inline">\(betabin( N, \alpha, \beta)\)</span>. This distribution has the following PDF:</p>
+<p>$$
+P(U=k) =  ,</p>
+<p>$$</p>
+<p>where <span class="math inline">\(B(\cdot,\cdot)\)</span> is the Beta function (a core feature of the <a href="https://en.wikipedia.org/wiki/Beta_distribution">Beta distribution</a>). It will be useful to see the form of this:</p>
+<p><span class="math display">\[
+B\left(\alpha, \beta \right) = \int_{0}^{1} x^{\alpha-1} (1-x)^{\beta-1} dx
+\]</span></p>
+<p>The Beta distribution is obtained “simply” by dividing both sides by <span class="math inline">\(B\left(\alpha, \beta \right)\)</span> so that the integral comes out to <span class="math inline">\(1\)</span>.</p>
+<p>So how does the math work out? We will assuming the following likelihoods and prior:</p>
+<p><span class="math display">\[
+\begin{aligned}
+k|\pi &amp;\sim \mbox{Bin}\left( n, \pi \right) \\
+U|\pi &amp;\sim \mbox{Bin}\left( N-n, \pi \right) \\
+\pi &amp;\sim \mbox{Beta}\left( \alpha, \beta \right)
+\end{aligned}
+\]</span></p>
+<p>Then to get the distribution of <span class="math inline">\(U|k\)</span>, we can say the following:</p>
+<p><span class="math display">\[
+\begin{aligned}
+f(U|k) &amp;\propto f(U|\pi) f(\pi | k) \\ 
+      &amp;=       f(U|\pi) \times \left[f(k | \pi) f(\pi)\right]
+\end{aligned}
+\]</span></p>
+<p>The second term on the second line is mainly for clarity of what we’re doing. We already know the posterior distribution of a proportion when sampling from a Binomial distribution (since we walked through it in the previous post with infinite populations). With the likelihoods and priors denoted above, we can say that <span class="math inline">\(\pi|k \sim \mbox{Beta}( k+\alpha, n-k+\beta)\)</span>.</p>
+<p>Now, the idea is to get at the distribution of <span class="math inline">\(U\)</span>, so conceptually we could think of doing the following (which is why the Beta-binomial can be considered a Binomial distribution for which the probability of success is unknown and randomly drawn from a beta distribution):</p>
+<p><span class="math display">\[
+f(U) = \int_{0}^{1} f(U|\pi) f(\pi)d\pi
+\]</span></p>
+<p>But <span class="math inline">\(f(\pi)\)</span> is selling ourselves short; we have more information than the prior, right? So really what we’re doing is:</p>
+<p><span class="math display">\[
+f(U|k) = \int_{0}^{1} f(U|\pi) f(\pi|k) d\pi
+\]</span></p>
+<p>This allows us to take advantage of what <span class="math inline">\(k\)</span> and <span class="math inline">\(n\)</span> told us about <span class="math inline">\(\pi\)</span>. The dependence on <span class="math inline">\(k\)</span> gets “inherited” from <span class="math inline">\(f(\pi|k)\)</span>. The math is below, though for ease of notation, I’m going to write <span class="math inline">\(\alpha^{*}=k+\alpha\)</span> and <span class="math inline">\(\beta^{*} = n-k+\beta\)</span>.</p>
+<p>$$
+\begin{aligned}
+f(U|k) &amp;= <em>{0}^{1} f(U|) f(|k)f(|k) d\
+&amp; \
+&amp;= </em>{0}^{1}  <sup>{u}(1-)</sup>{N-n-u} 
+<sup>{</sup>{<em>}-1} (1-)<sup>{</sup>{</em>}-1} d
+&amp; \
+&amp;\
+&amp;= <br />
+_{0}^{1} <sup>{u+</sup>{<em>}-1}(1-)<sup>{N-n-u+</sup>{</em>}-1} d
+\end{aligned}</p>
+<p>$$</p>
+<p>If you look back to the definition of the Beta function, you’ll note that the integral here is exactly that, so we can simplify this to:</p>
+$$
+<span class="math display">\[\begin{aligned}
+f(U|k) &amp;= \binom{N-n}{u}\dfrac{1}{B(\alpha^{*}, \beta^{*})}  
+          B( u + \alpha^{*}, N-n-u+\beta^{*})
+\end{aligned}\]</span>
+<p>$$</p>
+<p>This, we can note, is precisely the form of the Beta-binomial distribution. So we can say that:</p>
+<p><span class="math display">\[
+U|k \sim \mbox{betabinomial}( N-n, k+\alpha, n-k+\beta)
+\]</span></p>
+<p>From the Beta-binomial distribution we can get values such as the median of <span class="math inline">\(U|x\)</span>, or quantiles to form a credible interval. Hence, the Bayesian approach offers an alternative form of point and interval estimation.</p>
+</div>
+</div>
+<div id="comparison" class="section level2">
+<h2>Comparison</h2>
+<p>As before, I will compare the methods computationally, using the coverage probability as the metric of interest. This will need to be a bit more elaborate, since we have added another parameter, <span class="math inline">\(N\)</span>, into the mix. As before, I’m calculating <em>exact</em> coverage probabilities, though now the hypergeometric distribution is used to find the probability that the number of defects is within the proper range.</p>
+<p>Since the “standard” method was empirically worse than the others for the infinite population case, I’m no longer considering it, and will only compare the following three approaches:</p>
+<ol style="list-style-type: decimal">
+<li>Wilson interval with FPFC</li>
+<li>Agresti-Coull interval with FPFC</li>
+<li>Bayesian interval</li>
+</ol>
+<p><img src="/post-stats/2020-11-27-estimating-proportions-for-finite-populations.en_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>As with the infinite-population case, these three intervals behave fairly similarly, with the Agresti-Coull interval being perhaps over-conservative (wider interval) in some cases. What is interesting to me is that the Bayesian interval dropped in coverage probability when the sampling rate was small (notably, the <span class="math inline">\(N=1000, n=10\)</span> case). This will hopefully be a fairly rare occurrence - and in my practice has been - so I wouldn’t necessarily rule out the Bayesian interval.</p>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>This was actually the post that I wanted to write, but I thought the <a href="https://jelsema.github.io/post-stats/estimating-binomial-proportions/">infinite population</a> case needed to be covered first. Maybe that’s just my inner professor coming out and wanting to build concepts from the ground up. Anyway, I hope these posts were interesting, they were for me!</p>
+<!--- 
+
+## Sources that I looked at
+
+https://en.wikipedia.org/wiki/Beta-binomial_distribution
+
+https://en.wikipedia.org/wiki/Standard_error#Correction_for_finite_population
+
+Derivation?
+
+
+https://stats.stackexchange.com/questions/5158/explanation-of-finite-correction-factor
+
+https://stats.stackexchange.com/questions/299086/question-on-covariance-for-sampling-without-replacement
+
+
+https://math.stackexchange.com/questions/926478/how-does-accuracy-of-a-survey-depend-on-sample-size-and-population-size/1357604#1357604
+
+https://online.stat.psu.edu/stat415/lesson/6/6.3
+--->
+</div>

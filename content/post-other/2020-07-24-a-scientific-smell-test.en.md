@@ -3,11 +3,11 @@ title: A Scientific Smell Test
 author: Casey Jelsema
 date: '2020-07-24'
 slug: a-scientific-smell-test
-categories: []
+categories:
+  - science
 tags:
   - covid
   - coronavirus
-  - science
   - evidence
 subtitle: ''
 summary: ''

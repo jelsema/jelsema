@@ -1,0 +1,785 @@
+---
+title: Estimating binomial proportions for rare events
+author: Casey
+date: '2020-10-12'
+slug: estimating-binomial-proportions
+categories:
+  - stat101
+  - methods
+  - lecture
+tags:
+  - categorical
+  - proportion
+  - binomial
+  - rare events
+output:
+  blogdown::html_page:
+    toc: true
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2020-10-12T10:51:24-06:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+
+## Introduction
+
+```{r setup, message=FALSE, results="hide", echo=FALSE }
+
+
+knitr::opts_chunk$set( echo = FALSE, message=FALSE )
+
+
+library("tidyverse")
+
+
+```
+
+
+
+Estimating a proportion gets covered in virtually every introductory statistics course, so why would I be writing a post about it? There are three reasons:
+
+1. One of my goals with these posts is to explain some basic statistical concepts.
+2. The "standard" approach from many - possibly most - introductory books is *bad*.
+3. Especially when it is a "rare event" of interest, the standard method breaks down.
+4. To motivate myself to do some of the math and write a simulation comparing the alternatives so that I better understand them.
+
+For items 2 and 3, there are some modifications and alternatives which are not really that difficult or complicated, so I think they're suitable for a general audience (though I can see why they're less talked about in intro stats).
+
+
+
+To introduce some notation, let's consider a sample of size $n$ from an infinite population which has a proportion $p$ of the outcome of interest, and in this sample we count $x$ occurrences of the event of interest. For a couple of examples:
+
+- There is a stable manufacturing process creating some component, but a certain proportion of these components will exhibit a fatal flaw. We randomly sample 100 units and count the number with the flaw. This could be either presence/absence of some defect, or pass/fail inspection on a numeric measurement.
+- The CDC randomly selects a sample of 1000 individuals and counts how many of them test positive for a particular illness (influenza, COVID-19, etc).
+
+
+
+This post will be organized as:
+
+- Talk about the common approach usually taught in intro stats.
+- Explain why that approach is not so great, for two reasons.
+- Introduce two alternative approaches and explain how they arise.
+- Compare the performance of the intervals.
+
+
+## The common approach
+
+
+When an introductory statistics textbook talks about estimating a binomial proportion, they will typically say that we estimate $p$ using $\hat{p} = x / n$. This estimate has a sample standard error $se(\hat{p}) = \sqrt{\hat{p}(1-\hat{p})/n}$. From this, we can construct a *Wald statistic*, which is asymptotically Normal, then we can use the asymptotic normality of Wald statistics to say that:
+
+$$
+\dfrac{\hat{p}-p}{\sqrt{\dfrac{\hat{p}(1-\hat{p})}{n}}} \sim N( 0, 1)
+$$
+
+
+If we use this to set up a 2-tailed test, we can then unpack it (or "invert" the test) to obtain a confidence interval:
+
+
+$$
+\hat{p} \pm Z_{\alpha/2} \sqrt{\dfrac{\hat{p}(1-\hat{p})}{n}}
+$$
+
+
+This is the confidence interval that is often (though not universally) taught in introductory statistics as the "default" or "standard."
+
+
+As a side-note, it may be easier for beginners to "see" the asymptotic normality arising as a consequence of the normal approximation to the binomial distribution. If $X \sim \mbox{Bin}(n,p)$, then $X \stackrel{\text{aprx}}{\sim} N( np, np(1-p) )$ under [certain conditions](https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation) that are not consistent from source to source. There are [different ways](https://math.stackexchange.com/questions/578935/how-to-prove-that-the-binomial-distribution-is-approximately-close-to-the-normal) to go about establishing this, one of which is via the Central Limit Theorem.
+
+
+
+
+
+### Common Approach: The math
+
+If you haven't seen the math of deriving $\hat{p} = x / n$ and $se(\hat{p}) = \sqrt{\hat{p}(1-\hat{p})/n}$ and would like to see, read on. If you know it already, or don't have much calculus or probability theory background (maybe a calculus-based introductory statistics course), you may want to skip this subsection.
+
+First we'll derive $\hat{p}$ using *maximum likelihood estimation* (MLE, which is usually pronounced M-L-E, but one prof of mine pronounced "me-lee" which was always weird to me). To do this, we take the *likelihood* of the data (in this case, a Binomial distribution), and find the value of $p$ which maximizes it. Mathematically, this is just a calculus problem, and for the Binomial distribution is fairly straightforward.
+
+The likelihood is the joint probability, but since we observe the data we think of the data as constant, and treat it as a function of the parameters of interest. In this case, the individual observations are Bernoulli (success/failure), and the joint probability is a Binomial distribution. Hence the likelihood is: $\mathcal{L}(p|x) = \binom{n}{x}p^{x}(1-p)^{n-x}$. The typical MLE approach is to take the derivative of the log-likelihood, since that won't move the maximum, and generally makes solving easier.
+
+
+$$
+\begin{aligned}
+L(p|X) &= \ln\mathcal{L}(p|X) = \ln \binom{n}{X} + X\ln(p) + (n-X)\ln(1-p) \\
+\dfrac{\partial}{\partial p}L(p|X) &= \dfrac{X}{p} - \dfrac{n-X}{1-p}
+\end{aligned}
+$$
+
+From there, we set the derivative to zero and solve for the parameter.
+
+
+$$
+\begin{aligned}
+0 &= \dfrac{x}{\hat{p}} - \dfrac{n-x}{1-\hat{p}} \\
+\dfrac{n-x}{1-\hat{p}} &= \dfrac{n}{\hat{p}} \\
+n\hat{p} - x\hat{p} &= x - x\hat{p} \\
+n\hat{p} &= x \\
+\hat{p} &= \dfrac{x}{n}
+\end{aligned}
+$$
+
+We also want the standard error of our MLE, which is just the square root of the variance. 
+
+
+$$
+\begin{aligned}
+V\left[ \hat{p} \right] &= V\left[ \dfrac{X}{n} \right] \\
+&= \dfrac{1}{n^2} V\left[ X \right]
+\end{aligned}
+$$
+
+Then since $x$ comes from a Binomial distribution, we know that $V\left[ X \right] = np(1-p)$, substituting that in results in:
+
+$$
+\begin{aligned}
+V\left[ \hat{p} \right] &= \dfrac{np(1-p)}{n^2} \\
+&= \dfrac{p(1-p)}{n}
+\end{aligned}
+$$
+
+Finally, a *Wald statistic* is a statistic of the form:
+
+$$
+\begin{aligned}
+z = \dfrac{\hat{\theta} - \theta}{se(\hat{\theta})}
+\end{aligned}
+$$
+
+where $\hat{\theta}$ is the MLE. Since we have the MLE and its standard error, the Wald statistic is:
+
+
+$$
+\begin{aligned}
+z = \dfrac{\hat{p} - p}{ \sqrt{\dfrac{p(1-p)}{n}} }
+\end{aligned}
+$$
+
+Then, because Wald statistics are asymptotically Normal, we use this statistic to obtain the confidence interval we saw before.
+
+
+### Why the common approach is bad
+
+
+```{r, results="hide" }
+
+## FUNCTION TO COMPUTE COVERAGE PROBABILITY
+make_fig <- function( pseq, nseq ){
+  
+  results <- crossing( n=nseq, p=pseq ) %>%
+  mutate( cover = 0 )
+  npseq <- nrow(results)
+  
+  
+  for( ii in 1:npseq ){
+    
+    pp1 <- results[["p"]][ii]
+    nn1 <- results[["n"]][ii]
+    
+    which_phats <- tibble(
+      xobs = seq(0, nn1, by=1),
+      phat = xobs/nn1,
+      p_me = qnorm(0.975)*sqrt( phat*(1-phat)/nn1 ),
+      intv = (phat-p_me <= pp1) & (pp1 <= phat+p_me)
+    ) %>% 
+    filter( intv )
+    
+    Xmin <- min( which_phats[["xobs"]] )
+    Xmax <- max( which_phats[["xobs"]] )
+    results[["cover"]][ii] <- pbinom( Xmax, nn1, pp1 ) - pbinom( Xmin-1, nn1, pp1 )
+    
+  }
+  
+  
+  ## Make the figure
+  if( length(pseq) > length(nseq) ){
+    
+    plabs <- str_c( "n = ", unique(results[["n"]]) )
+    results <- results %>% 
+      mutate( n = factor(str_c("n = ", n), levels=plabs ) )
+    
+    
+    ggplot( results, aes(x=p, y=cover) ) + 
+      facet_wrap( ~ n, scale="free_y" ) + 
+      geom_line() + 
+      labs( y="Coverage Probability", x="True value of p" )
+    
+  } else{
+    
+    plabs <- str_c( "p = ", unique(results[["p"]]) )
+    results <- results %>% 
+      mutate( p = factor(str_c("p = ", p), levels=plabs ) )
+    
+    ggplot( results, aes(x=n, y=cover) ) + 
+      facet_wrap( ~ p, scale="free_y" ) + 
+      geom_line() + 
+      labs( y="Coverage Probability", x="Sample size" )
+  }
+  
+
+}
+
+
+# make_fig( pseq = c( 0.01, 0.05, 0.10, 0.2), 
+#           nseq = seq( 25, 100, by=1 ) )
+
+# make_fig( pseq = seq( 0.01, 0.99, by=0.01), 
+#           nseq = c( 25,50,100,200 ) )
+
+
+```
+
+
+So why should we be looking beyond the basic approach? Because it's bad. One way to understand that it's bad is to look at the *coverage probability* of the confidence interval. If we consider the coverage probability across a range of $p$ values, we'll see that it often drops below the nominal value, especially so at the tails, where $p$ is close to $0$ or $1$. The figure below shows the coverage probability for each $p$ (in the interval $[0.02,0.98]$) at a selection of sample sizes.
+
+
+```{r}
+
+make_fig( pseq = seq( 0.02, 0.98, by=0.005),
+          nseq = c( 25,50,100,200 ) )
+
+
+```
+
+This is a similar pattern as shown in several figures from [Brown, Cai, & DasGupta (2001)](https://projecteuclid.org/euclid.ss/1009213286) (which I'll abbreviate BCD), for example, the bottom-left panel here is the same as their Figure 3, just at a different resolution. We can alternatively switch, to look at a sequence of $n$ for a selection of $p$. 
+
+
+```{r}
+make_fig( pseq = c( 0.01, 0.05, 0.10, 0.20 ),
+          nseq = seq( 25,100, by=1 ) )
+```
+
+
+Here, the bottom-right figure is the same as their Figure 1. In both figures we see a very disturbing pattern: The coverage probability is usually below the nominal value, sometimes substantially so. Even at $n=100$ or $n=200$, the coverage probability rarely gets up to the nominal value for any $p$. This is discussed in more detail in Brown, Cai, & DasGupta (2001), as well as several responses to their paper (which are included in the publication I linked above).
+
+An in addition to that, they are very jittery. Ideally we'd like to think that the coverage probability is a smooth function, but that's not the case here. It's a result of the underlying discreteness of of $X$, and there are "lucky" and "unlucky" combinations of $n$ and $p$.
+
+
+
+
+**Aside:** These figures were not generated by simulation, they are exact coverage probabilities. It's fairly straightforward to come up with the formula. For illustration, I'll just pick a certain value of $p$, say $p=0.20$. 
+We need to know the probability that, when $p=0.20$, the confidence interval we compute will actually contain the value $0.20$. But $p$ isn't what the confidence interval formula uses, right? Even if we know that $p=0.20$, there are many possible values for $\hat{p}$, which mean there are many possible values of the endpoints for the confidence interval. So to calculate the coverage probability, what we do (or what I did), was:
+
+1. Set up a vector $X$ which contains the values $0, 1, ..., n$. This is the sequence of "successes".
+2. For each, compute $\hat{p} = X/n$.
+3. From $\hat{p}$, compute the endpoints of the confidence interval.
+4. For each confidence interval, determine whether the true value of $p$ has been captured.
+5. Identify the bounds of $X$ which result in "successful" confidence intervals. That is, determine $X_{max}$ and $X_{min}$, the largest and smallest values of $X$ which produce a confidence interval which captures $p$. For example, when $p=0.20$, if $X=60$ and $n=100$, then the CI is $(0.504, 0.696)$, which does not capture $p$.
+6. Compute the probability that $X$ is contained in the interval $[X_{min}, X_{max}]$. Since we know $p$, this is just a binomial probability: $P( X \leq X_{max} ) - P( X \leq X_{min}-1 )$. Note we subtract 1, because $X_{min}$ is a valid value, so $X$ needs to be strictly below $X_{min}$ for the interval to fail.
+7. Repeat steps 1-6 for a sequence of $p$ from some "small" value to some "large" value (as indicated, I chose $0.02$ to $0.98$).
+
+Developing this idea and creating the code to produce a plot like the above would probably be a good exercise for a low-level statistics course that includes a probability component.
+
+
+
+<!----------
+
+One reason for the behavior at the tails is because of what happens to the standard error. Remember that we estimate the standard error of $\hat{p}$ with $se(\hat{p}) = \sqrt{\hat{p}(1-\hat{p})/n}.$
+If we think of this as a function of $\hat{p}$, it's basically of the form $y = x(1-x)$ (with $x$ bounded between $0$ and $1$). This function gets maximized when $x=0.5$, and when $x$ is close to $0$ or $1$, the function approaches zero. This means that the standard error of $\hat{p}$ gets arbitrarily close to zero. This shrinks the confidence interval and makes it less likely that we're able to capture the true value of $p$.
+
+---------->
+
+
+## Alternatives
+
+
+
+Now that we're all convinced that the standard approach has some deficiencies, what are some alternatives? I'm going to talk about three, though two are very similar. For each I'll try to provide a more intuitive overview, and then as before, dig into a bit of the math.
+
+
+
+### Alternative 1: Wilson and Agresi-Coull intervals 
+
+There are two (very similar) intervals I'll mention. BCD call them the *Wilson* interval, and the *Agresti-Coull* interval. The idea is to use a slightly modified estimator in place of $\hat{p}$:
+
+
+$$
+\tilde{p} = \dfrac{X + \dfrac{\kappa^{2}}{2}}{n + \kappa^{2} }
+$$
+
+In this, in part to reduce notation, I've used $\kappa = Z_{\alpha/2}$, which is what BCD did.
+
+This may look weird, but it's actually not that strange. Notice that the general form $X/n$ is still present, but there's a little bit added to each. And notably, it's adding precisely half as much to the numerator as to the denominator. The effect this has is like adding a few extra samples, of which half are successes and half are failures. For example, when we select 95% confidence, then $\kappa = 1.96$ and $\kappa^{2} = 3.84$, so we're adding approximately 2 to the numerator, and approximately 4 to the denominator (which was the approach suggested by 
+[Agresti & Coull (1998)](https://www.tandfonline.com/doi/abs/10.1080/00031305.1998.10480550),
+alternative link on [JSTOR](https://www.jstor.org/stable/2685469)). This has an effect of pulling the estimate slightly closer to 0.5, and also prevents it from being exactly zero, which uases problems with the standard error.
+
+
+Both the Wilson and Agresi-Coull approach use this as the point estimate, but the standard errors they use are slightly different.
+
+The Wilson confidence interval uses:
+
+$$
+se(\tilde{p}) = \left(\dfrac{\sqrt{n}}{n + \kappa^{2}}\right)\sqrt{\hat{p}(1-\hat{p}) + \dfrac{\kappa^{2}}{4n}}
+$$
+
+The Agresi-Coull confidence interval uses:
+
+
+$$
+se(\tilde{p}) = \sqrt{\dfrac{\tilde{p}(1-\tilde{p})}{\tilde{n}}}
+$$
+
+where $\tilde{n} = n+\kappa^{2}$. With $\tilde{n}$, we could also define $\tilde{X}=X+\kappa$ and write the point estimate as $\tilde{p} = \tilde{X}/\tilde{n}$. So the Agresi-Coull approach is really just the standard methods after having applied this adjustment of adding an equal number of successes and failures.
+
+
+### Wilson interval: The math
+
+Alright, so how do we get these estimators and standard errors? BCD aren't really focused on the derivation, so we need to go back to the source: 
+[Wilson (1927)](https://www.tandfonline.com/doi/abs/10.1080/01621459.1927.10502953) 
+(alternative: [JSTOR link](https://www.jstor.org/stable/2276774)). 
+
+
+Reading that, Wilson does something interesting. First, he considers the sampling distribution of the sample proportion.
+
+
+```{r}
+
+
+dat_w01 <- tibble(
+  p = seq(-4,4,length.out=500),
+  d = dnorm(p)
+)
+
+dat_w02 <- tibble(
+  p = seq(-1.7, 1.7 ,length.out=500),
+  d = dnorm(p)
+)
+
+dat_w03 <- tibble(
+  lab = c( "p", expression(p + ~kappa~sigma), expression(p - ~kappa~sigma) ),
+  p = c(0,1.7, -1.7),
+  d = c( 0.00, dnorm(1.7), dnorm(-1.7) )*0
+)
+
+
+ggplot( dat_w01, aes(x=p, y=d) ) + 
+  labs( y="Probability Density", x="Sample proportion") + 
+  geom_line() + 
+  geom_area( data=dat_w02 , alpha=0.25 ) + 
+  ggrepel::geom_label_repel( data=dat_w03, aes(label=lab), parse = TRUE, 
+                             nudge_x=c(0.1,0.4,-0.4)*2,
+                             nudge_y=c(0.05,0.05,0.05)*1,
+                             # segment.size = 1, segment.color="red",
+                             min.segment.length = 0.01,
+                             arrow= arrow(length = unit(0.015, "npc"), type = "closed", ends = "last")
+                             ) + 
+  theme( axis.text.x = element_blank() )
+
+
+
+```
+
+In this, $\sigma = \sqrt{p(1-p)/n}$ and $\kappa$ is some constant. He then points out that the probability of some value of $p$ falling outside of the interval is $p \pm \kappa\sigma$ is $P( Z \geq \kappa)$. The question is then how to extract $p$ from this. What Wilson does is *square* the distance between the true value $p$ and some sample proportion $\hat{p}$. And since we know that this distance is (with a probability determined by $\kappa$), we can equate the two. 
+
+$$
+\left(\hat{p} - p\right)^{2} = \left(\kappa\sigma\right)^2 = \dfrac{\kappa^{2}p(1-p)}{n}
+$$
+
+
+Small note: Wilson used $\lambda$, I'm using $\kappa$ because that's what BCD used. Having set this up Wilson (probably to save notation) sets $t = \kappa^{2}/n$, and points out that this is a quadratic expression in $p$, so we can use the quadratic formula to solve it. We first need to expand the square, get everything on one side, and collect like terms.
+
+
+$$
+\begin{aligned}
+p^{2} - 2p\hat{p} + \hat{p}^{2} &= tp - tp^{2} \\ 
+0 &= p^{2}\left(1+t\right) - p\left(2\hat{p}+t\right) + \hat{p}^{2}
+\end{aligned}
+$$
+
+Applying the [quadratic formula](https://en.wikipedia.org/wiki/Quadratic_formula) with
+$a=(1+t)$, $b=-(2\hat{p}+t)$, and $c=\hat{p}^{2}$
+we get the solution to be:
+
+
+$$
+\begin{align}
+p &= \dfrac{2\hat{p} + t \pm \sqrt{  (2\hat{p}+t)^{2} - 4(1+t)\hat{p}^{2}  }}{2(1+t)} \\
+  & \\
+  & \mbox{(some algebra)} \\
+  & \\
+  &= \dfrac{\hat{p} + \dfrac{t}{2} \pm \sqrt{ t\hat{p}(1-\hat{p}) + \dfrac{t^{2}}{4} }}{1+t}
+\end{align}
+$$
+
+
+I've skipped a little algebra, but it's only a couple lines at most. Once we're here, we need to recall that $t = \kappa^{2}/n$, and substitute that back in. I'm going to separate the fraction at the $\pm$, and pull a $1/n$ out from the denominator - thus multiplying the numerator by $n$ - to cancel some of these hideous fractions-within-fractions.
+
+
+$$
+\begin{align}
+p  &= \dfrac{\hat{p} + \dfrac{\kappa^{2}}{2n} \pm \sqrt{ \dfrac{\kappa^{2}}{n}\hat{p}(1-\hat{p}) + \kappa^{2}\dfrac{\kappa^{2}}{4n^{2}} }}{1+\kappa^{2}/n} \\
+  & \\
+  &= \dfrac{x + \dfrac{\kappa^{2}}{2}}{n+\kappa^{2}} \pm \dfrac{\sqrt{ \kappa^{2}n \hat{p}(1-\hat{p}) + \kappa^{2}n\dfrac{\kappa^{2}}{4n} }}{n+\kappa^{2}} \\
+  & \\
+  &= \dfrac{x + \dfrac{\kappa^{2}}{2}}{n+\kappa^{2}} \pm \dfrac{ \kappa\sqrt{n} \sqrt{ \hat{p}(1-\hat{p}) + \dfrac{\kappa^{2}}{4n} }}{n+\kappa^{2}} \\
+  & \\
+  &= \dfrac{x + \dfrac{\kappa^{2}}{2}}{n+\kappa^{2}} \pm \kappa \dfrac{ \sqrt{n}}{n+\kappa^{2}} \sqrt{ \hat{p}(1-\hat{p}) + \dfrac{\kappa^{2}}{4n} } 
+\end{align}
+$$
+
+
+Note that on line 2, I also multiplied the last term under the radical by $n/n = 1$. This was to make it "match" the first term in having $\kappa^{2}n$ that could be extracted from the radical. with this, we've arrived at the form of the interval I presented originally. 
+
+Remember that $\kappa$ was defined as a quantile from the normal distribution. By expressing the solution as I have, this results has the form of a traditional normal-based confidence interval: 
+
+$$
+\mbox{Estimate} \pm \mbox{Critical Value}\times\mbox{Std Error}
+$$
+
+
+Agresi and Coull wanted to simplify this a bit, so they used the same estimator, defining:
+
+$$
+\begin{align}
+\tilde{x} &= x + \kappa^{2}/2 \\
+\tilde{n} &= n + \kappa^{2}   \\
+\tilde{p} &= \tilde{x} / \tilde{n}
+\end{align}
+$$
+
+
+which is adding some number of trials, evenly split between successes and failures. They then use this $\tilde{p}$ in the "standard" form of the confidence interval. In this way they create a much better-behaving confidence interval, but which is a bit more straightforward and easier to remember than the Wilson interval.
+
+
+
+
+
+
+### Alternative 2: Bayesian method
+
+Lately I've been going to the Bayesian approach to this problem. This might get slightly more technical if you're at a lower mathematical level. For Bayesian analysis, we define a likelihood for the data, and a prior for the parameters. In this case, the data are Binomial, and the only parameter is the proportion, for which a Beta distribution works well. So we will assume:
+
+
+$$
+\begin{aligned}
+X | p &\sim \mbox{Binomial(n,p)} \\
+p     &\sim \mbox{Beta}(\alpha, \beta)
+\end{aligned}
+$$
+
+
+Setting $\alpha=\beta=1$ results in a uniform or "flat" prior, meaning we don't have any initial judgment on whether $p$ is likely to be large or small, all possible values of $p$ are equally likely. Then, if we call the likelihood $L(x|p)$ and the prior $\pi(p)$, the posterior for $p$ is found by:
+
+
+$$
+\pi(p|x) \propto L(x|p)\pi(p)
+$$
+
+So, inserting the Binomial PMF for $L(x|p)$ and the Beta PDF for $\pi(p)$, we get:
+
+$$
+\begin{aligned}
+\pi(p|x) &\propto \binom{n}{x}p^{x}(1-p)^{n-x} \times \dfrac{p^{\alpha-1}(1-p)^{\beta-1}}{B(\alpha,\beta)}  \\
+&\propto p^{x - \alpha-1}(1-p)^{n - x + \beta-1}
+\end{aligned}
+$$
+
+
+Formally, we should be performing some integration, but since we're really interested in $p$ here, I just want to see what the form of the resulting posterior will look like, and in this case it's another Beta distribution, specifically, a $\mbox{Beta}(x+\alpha, n-x+\beta)$ distribution.
+
+With this posterior distribution, we can estimate $p$ in several ways. We can take the mean or median as a point estimate, and we can obtain a credible interval (the Bayesian answer to the confidence interval). For example, say we had a sample of size $n=50$, and observed $x=1$ occurrences of the event of interest. Then taking $\alpha = \beta = 1$ (which is a uniform prior on $p$), our posterior would look like below. Note that the x-axis is fairly truncated!
+
+
+```{r}
+
+nn <- 50
+xx <- 1
+aa <- 1
+bb <- 1
+
+dat_b01 <- tibble(
+  p = seq(0,1,length.out=500),
+  d = dbeta(p, xx+aa, nn-xx+bb)
+)
+
+dat_b02 <- tibble(
+  p = qbeta( seq(0.025,0.975,length.out=500), xx+aa, nn-xx+bb),
+  d = dbeta(p, xx+aa, nn-xx+bb)
+)
+
+dat_b03 <- tibble(
+  p = qbeta( c(0.025,0.5,0.975), xx+aa, nn-xx+bb),
+  d = dbeta(p, xx+aa, nn-xx+bb)*0,
+  lab = c( "2.5% LB", "Median", "97.5% UB")
+)
+
+dat_b04 <- tibble(
+  p1 = qbeta( c(0.025,0.5,0.975), xx+aa, nn-xx+bb),
+  p2 = p1,
+  d1 = 0,
+  d2 = dbeta(p1, xx+aa, nn-xx+bb),
+  lab = c( "2.5% LB", "Median", "97.5% UB")
+)
+
+
+
+ggplot( dat_b01, aes(x=p, y=d) ) + 
+  labs( y="Probability Density", x="Sample proportion") + 
+  coord_cartesian( xlim=c(0,0.15) ) + 
+  geom_line() + 
+  geom_area( data=dat_b02 , alpha=0.25 ) + 
+  geom_segment( data=dat_b04,
+                aes(x=p1, xend=p2, y=d1, yend=d2, group=lab),
+              linetype="dashed") +
+  ggrepel::geom_label_repel( data=dat_b03, aes(label=lab),
+                             nudge_x=c(0.005,0.02,0.02),
+                             nudge_y=c(0.05,0.05,0.05)*50,
+                             # segment.size = 1, segment.color="red",
+                             min.segment.length = 0.01,
+                             arrow= arrow(length = unit(0.015, "npc"), type = "closed", ends = "last")
+                             )
+
+
+
+
+
+
+```
+
+The estimate using the Wilson approach with 95% confidence, for reference, would be:
+
+$$
+\tilde{p} = \dfrac{1 + 1.96^2/2}{50 + 1.96^2} = \dfrac{2.921}{53.84} = 0.0542
+$$
+
+
+
+```{r, eval=FALSE}
+kk <- qnorm(0.975)
+(xx + (kk^2)/2) / ( nn + (kk^2) )
+```
+
+
+
+
+
+## Comparisons
+
+
+So that's an overview of three methods for estimating $p$ (both a point estimate and a confidence interval), but how to they compare to each other? We computed the coverage probability before, so let's follow the same framework and compute the coverage probability for all four intervals. As before, this won't be a simulation, but exact coverage probabilities.
+
+
+
+```{r, results="hide"}
+
+
+avg_int_len <- function( xyz ){
+  sum( xyz[["int_len"]] * xyz[["prob_x"]] / sum(xyz[["prob_x"]]) )
+}
+avg_rel_err <- function( xyz ){
+  sum( xyz[["rel_err"]] * xyz[["prob_x"]] / sum(xyz[["prob_x"]]) )
+}
+cov_prob <- function( xyz, nn1, pp1 ){
+  Xmin <- min( xyz[["xobs"]] )
+  Xmax <- max( xyz[["xobs"]] )
+  pbinom( Xmax, nn1, pp1 ) - pbinom( Xmin-1, nn1, pp1 )
+}
+
+
+
+## FUNCTION TO COMPUTE COVERAGE PROBABILITY
+make_fig <- function( pseq, nseq ){
+  
+  results <- crossing( n=nseq, p=pseq ) %>%
+    mutate( int_std = NA, int_wil = NA, int_ac  = NA, int_bay = NA,
+            cov_std = NA, cov_wil = NA, cov_ac  = NA, cov_bay = NA,
+            mre_std = NA, mre_wil = NA, mre_ac  = NA, mre_bay = NA
+          )
+  
+  npseq <- nrow(results)
+  kk    <- qnorm(0.975)
+  kk2   <- qnorm(0.975)^2
+  
+  for( ii in 1:npseq ){
+      
+    pp1 <- results[["p"]][ii]
+    nn1 <- results[["n"]][ii]
+    
+    which_phats_std <- tibble(
+      xobs = seq(0, nn1, by=1),
+      phat = xobs/nn1,
+      p_me = kk*sqrt( phat*(1-phat)/nn1 ),
+      intv = (phat-p_me <= pp1) & (pp1 <= phat+p_me),
+      prob_x  = dbinom( xobs, size=nn1, prob=pp1 ),
+      int_len = 2*p_me,
+      rel_err = abs((phat - pp1)/pp1)
+    )
+    
+    which_phats_wil <- tibble(
+      xobs = seq(0, nn1, by=1),
+      phat = xobs/nn1,
+      ptil = (xobs + kk2/2) / ( nn1 + kk2) ,
+      p_me = kk * ((sqrt(nn1)) / (nn1 + kk2)) * sqrt(phat*(1-phat) + kk2/(4*nn1)),
+      intv = (ptil-p_me <= pp1) & (pp1 <= ptil+p_me),
+      prob_x  = dbinom( xobs, size=nn1, prob=pp1 ),
+      int_len = 2*p_me,
+      rel_err = abs((ptil - pp1)/pp1)
+    )
+    
+    which_phats_ac <- tibble(
+      xobs = seq(0, nn1, by=1),
+      ptil = (xobs + kk2/2) / ( nn1 + kk2) ,
+      p_me = kk*sqrt( ptil*(1-ptil)/nn1 ),
+      intv = (ptil-p_me <= pp1) & (pp1 <= ptil+p_me),
+      prob_x  = dbinom( xobs, size=nn1, prob=pp1 ),
+      int_len = 2*p_me,
+      rel_err = abs((ptil - pp1)/pp1)
+    )
+    
+    which_phats_bay <- tibble(
+      xobs = seq(0, nn1, by=1),
+      phat = qbeta( 0.500, xobs+1, nn1-xobs+1) ,
+      pub  = qbeta( 0.975, xobs+1, nn1-xobs+1),
+      plb  = qbeta( 0.025, xobs+1, nn1-xobs+1),
+      intv = (plb <= pp1) & (pp1 <= pub),
+      prob_x  = dbinom( xobs, size=nn1, prob=pp1 ),
+      int_len = pub - plb,
+      rel_err = abs((phat - pp1)/pp1)
+    )
+    
+    
+    results[["int_std"]][ii] <- avg_int_len( which_phats_std )
+    results[["int_wil"]][ii] <- avg_int_len( which_phats_wil )
+    results[["int_ac"]][ii]  <- avg_int_len( which_phats_ac  )
+    results[["int_bay"]][ii] <- avg_int_len( which_phats_bay )
+    
+    which_phats_std <- which_phats_std %>% filter( intv )
+    which_phats_wil <- which_phats_wil %>% filter( intv )
+    which_phats_ac  <- which_phats_ac  %>% filter( intv )
+    which_phats_bay <- which_phats_bay %>% filter( intv )
+    
+    results[["cov_std"]][ii] <- cov_prob( which_phats_std, nn1, pp1 )
+    results[["cov_wil"]][ii] <- cov_prob( which_phats_wil, nn1, pp1 )
+    results[["cov_ac"]][ii]  <- cov_prob( which_phats_ac, nn1, pp1  )
+    results[["cov_bay"]][ii] <- cov_prob( which_phats_bay, nn1, pp1 )
+    
+    results[["mre_std"]][ii] <- avg_rel_err( which_phats_std )
+    results[["mre_wil"]][ii] <- avg_rel_err( which_phats_wil )
+    results[["mre_ac"]][ii]  <- avg_rel_err( which_phats_ac  )
+    results[["mre_bay"]][ii] <- avg_rel_err( which_phats_bay )
+      
+  }
+  
+  
+  
+  return( results )
+
+}
+
+# 
+# 
+# fig_data <- make_fig( pseq = seq( 0.02, 0.98, by=0.005),
+#                       nseq = c( 25,50,100,200 ) )
+
+
+# fig_data <- make_fig( pseq = seq( 0.1, 0.9, by=0.05),
+#                       nseq = c( 25,50,100,200 ) )
+
+
+
+```
+
+
+
+
+```{r}
+
+
+fig_data <- make_fig( pseq = seq( 0.02, 0.98, by=0.005),
+                      nseq = c( 25,50,100,200 ) )
+plabs <- str_c( "n = ", unique(fig_data[["n"]]) )
+
+
+fig_dat_02 <- fig_data %>% 
+  pivot_longer( names_to="tmp", values_to="value", cols=int_std:mre_bay ) %>% 
+  separate( tmp, into=c("Outcome", "Method"), sep="_" ) %>% 
+  mutate(
+    Outcome = recode_factor( Outcome, "cov"="coverage", "int"="length", "mre"="mre"),
+    Method  = recode_factor( Method, "std"="Standard", "wil"="Wilson", "ac"="Agresti-Coull", "bay"="Bayes"),
+    n2 = factor(str_c( "n = ", n ), levels=plabs )
+  ) %>%
+  pivot_wider( names_from="Outcome", values_from=value )
+
+
+
+ggplot( fig_dat_02, aes(x=p, y=coverage) ) + 
+  coord_cartesian( ylim=c(0.9, 1.0) ) + 
+  facet_wrap( ~ n2 ) + 
+  geom_line( aes(color=Method) ) + 
+  labs(x="True value of p", y="Coverage Probability") +
+  scale_colour_manual( values=c("thistle3", "indianred3", "steelblue3", "seagreen3")  ) + 
+  theme( legend.position="bottom")
+
+# fig_dat_02 %>% filter( Method %in% c("Wilson", "Bayes") ) %>%
+# ggplot( aes(x=p, y=coverage) ) +
+#   coord_cartesian( ylim=c(0.9, 1.0) ) +
+#   facet_wrap( ~ n2 ) +
+#   geom_line( aes(color=Method) ) +
+#   labs(x="True value of p", y="Coverage Probability") +
+#   scale_colour_manual( values=c("indianred3", "steelblue3", "seagreen3")  ) +
+#   theme( legend.position="bottom")
+
+
+```
+
+
+We see here again that the standard interval performs poorly, but now we can see how the alternatives stack up against it. The Agresti-Coull interval tends to have the highest coverage probability, while the Wilson and Bayes intervals are very close (being on top of each other much of the time!).
+
+
+In another way of thinking about the intervals, we can consider the *expected interval length*. Recall when I computed the interval, I'd take a given value of $p$ and $n$, and compute the interval for all possible values of $x$. So when I calculated the interval, I also obtained the length of the interval and computed a weighted average (with weight $P(X=x)$) of the lengths. We see that result below.
+
+
+```{r}
+
+fig_dat_02 %>% #filter( n==25 ) %>% 
+  ggplot( aes(x=p, y=length) ) + 
+    # coord_cartesian( ylim=c(0.9, 1.0) ) + 
+    facet_wrap( ~ n2, scale="free_y" ) + 
+    geom_line( aes(color=Method) ) + 
+    labs(x="True value of p", y="Coverage Probability") +
+    # scale_colour_brewer( palette= "Dark2"  ) + 
+    scale_colour_manual( values=c("thistle3", "indianred3", "steelblue3", "seagreen3")  ) + 
+    theme( legend.position="bottom")
+
+
+
+```
+
+Certainly for smaller sample sizes, the Wilson and Bayes intervals produce shorter intervals (that is: more precision on $p$). One may be tempted to think that for small $n$ *and* small $p$ the standard interval is good here, but don't forget the coverage probability: It drops precipitously at that point! Once we get much beyond $n=100$ there isn't much difference between the Wilson, Agresti-Coull, and Bayes intervals.
+
+
+## Summary
+
+In this post we explored estimating a Binomial proportion, seeing how the standard method is derived, and why it's bad, and explored some alternatives (including their derivation). Based on the coverage probabilities and interval lengths, my suggestion would be to use either the Wilson or Bayes intervals - they both have good coverage, and tend to be shorter than the Agresti-Coull interval. The Agresti-Coull has slightly higher coverage probability, but that comes at the expense of a longer interval. That being said, it depends on the behavior you want to see. The Wilson and Bayes intervals seem to have 95% coverage probability *on average*, while the Agresti-Coull interval seems to maintain *at least* 95% coverage (or very close to it) throughout.
+
+
+
+
+
+```{r, eval=FALSE}
+
+
+fig_dat_02 %>% 
+  group_by( Method, n ) %>% 
+  summarize( mean_cp = mean(coverage),
+             sd_cp = sd(coverage),
+             min_cp = min(coverage),
+             max_cp = max(coverage) ) %>% 
+  filter( Method != "Standard" )
+
+
+```
+
+
+
+
+
+
+

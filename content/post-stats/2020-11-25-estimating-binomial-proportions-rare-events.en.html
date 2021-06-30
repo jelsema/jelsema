@@ -1,0 +1,282 @@
+---
+title: Estimating binomial proportions for rare events
+author: Casey
+date: '2020-10-12'
+slug: estimating-binomial-proportions
+categories:
+  - stat101
+  - methods
+  - lecture
+tags:
+  - categorical
+  - proportion
+  - binomial
+  - rare events
+output:
+  blogdown::html_page:
+    toc: true
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2020-10-12T10:51:24-06:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#the-common-approach">The common approach</a><ul>
+<li><a href="#common-approach-the-math">Common Approach: The math</a></li>
+<li><a href="#why-the-common-approach-is-bad">Why the common approach is bad</a></li>
+</ul></li>
+<li><a href="#alternatives">Alternatives</a><ul>
+<li><a href="#alternative-1-wilson-and-agresi-coull-intervals">Alternative 1: Wilson and Agresi-Coull intervals</a></li>
+<li><a href="#wilson-interval-the-math">Wilson interval: The math</a></li>
+<li><a href="#alternative-2-bayesian-method">Alternative 2: Bayesian method</a></li>
+</ul></li>
+<li><a href="#comparisons">Comparisons</a></li>
+<li><a href="#summary">Summary</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Estimating a proportion gets covered in virtually every introductory statistics course, so why would I be writing a post about it? There are three reasons:</p>
+<ol style="list-style-type: decimal">
+<li>One of my goals with these posts is to explain some basic statistical concepts.</li>
+<li>The “standard” approach from many - possibly most - introductory books is <em>bad</em>.</li>
+<li>Especially when it is a “rare event” of interest, the standard method breaks down.</li>
+<li>To motivate myself to do some of the math and write a simulation comparing the alternatives so that I better understand them.</li>
+</ol>
+<p>For items 2 and 3, there are some modifications and alternatives which are not really that difficult or complicated, so I think they’re suitable for a general audience (though I can see why they’re less talked about in intro stats).</p>
+<p>To introduce some notation, let’s consider a sample of size <span class="math inline">\(n\)</span> from an infinite population which has a proportion <span class="math inline">\(p\)</span> of the outcome of interest, and in this sample we count <span class="math inline">\(x\)</span> occurrences of the event of interest. For a couple of examples:</p>
+<ul>
+<li>There is a stable manufacturing process creating some component, but a certain proportion of these components will exhibit a fatal flaw. We randomly sample 100 units and count the number with the flaw. This could be either presence/absence of some defect, or pass/fail inspection on a numeric measurement.</li>
+<li>The CDC randomly selects a sample of 1000 individuals and counts how many of them test positive for a particular illness (influenza, COVID-19, etc).</li>
+</ul>
+<p>This post will be organized as:</p>
+<ul>
+<li>Talk about the common approach usually taught in intro stats.</li>
+<li>Explain why that approach is not so great, for two reasons.</li>
+<li>Introduce two alternative approaches and explain how they arise.</li>
+<li>Compare the performance of the intervals.</li>
+</ul>
+</div>
+<div id="the-common-approach" class="section level2">
+<h2>The common approach</h2>
+<p>When an introductory statistics textbook talks about estimating a binomial proportion, they will typically say that we estimate <span class="math inline">\(p\)</span> using <span class="math inline">\(\hat{p} = x / n\)</span>. This estimate has a sample standard error <span class="math inline">\(se(\hat{p}) = \sqrt{\hat{p}(1-\hat{p})/n}\)</span>. From this, we can construct a <em>Wald statistic</em>, which is asymptotically Normal, then we can use the asymptotic normality of Wald statistics to say that:</p>
+<p><span class="math display">\[
+\dfrac{\hat{p}-p}{\sqrt{\dfrac{\hat{p}(1-\hat{p})}{n}}} \sim N( 0, 1)
+\]</span></p>
+<p>If we use this to set up a 2-tailed test, we can then unpack it (or “invert” the test) to obtain a confidence interval:</p>
+<p><span class="math display">\[
+\hat{p} \pm Z_{\alpha/2} \sqrt{\dfrac{\hat{p}(1-\hat{p})}{n}}
+\]</span></p>
+<p>This is the confidence interval that is often (though not universally) taught in introductory statistics as the “default” or “standard.”</p>
+<p>As a side-note, it may be easier for beginners to “see” the asymptotic normality arising as a consequence of the normal approximation to the binomial distribution. If <span class="math inline">\(X \sim \mbox{Bin}(n,p)\)</span>, then <span class="math inline">\(X \stackrel{\text{aprx}}{\sim} N( np, np(1-p) )\)</span> under <a href="https://en.wikipedia.org/wiki/Binomial_distribution#Normal_approximation">certain conditions</a> that are not consistent from source to source. There are <a href="https://math.stackexchange.com/questions/578935/how-to-prove-that-the-binomial-distribution-is-approximately-close-to-the-normal">different ways</a> to go about establishing this, one of which is via the Central Limit Theorem.</p>
+<div id="common-approach-the-math" class="section level3">
+<h3>Common Approach: The math</h3>
+<p>If you haven’t seen the math of deriving <span class="math inline">\(\hat{p} = x / n\)</span> and <span class="math inline">\(se(\hat{p}) = \sqrt{\hat{p}(1-\hat{p})/n}\)</span> and would like to see, read on. If you know it already, or don’t have much calculus or probability theory background (maybe a calculus-based introductory statistics course), you may want to skip this subsection.</p>
+<p>First we’ll derive <span class="math inline">\(\hat{p}\)</span> using <em>maximum likelihood estimation</em> (MLE, which is usually pronounced M-L-E, but one prof of mine pronounced “me-lee” which was always weird to me). To do this, we take the <em>likelihood</em> of the data (in this case, a Binomial distribution), and find the value of <span class="math inline">\(p\)</span> which maximizes it. Mathematically, this is just a calculus problem, and for the Binomial distribution is fairly straightforward.</p>
+<p>The likelihood is the joint probability, but since we observe the data we think of the data as constant, and treat it as a function of the parameters of interest. In this case, the individual observations are Bernoulli (success/failure), and the joint probability is a Binomial distribution. Hence the likelihood is: <span class="math inline">\(\mathcal{L}(p|x) = \binom{n}{x}p^{x}(1-p)^{n-x}\)</span>. The typical MLE approach is to take the derivative of the log-likelihood, since that won’t move the maximum, and generally makes solving easier.</p>
+<p><span class="math display">\[
+\begin{aligned}
+L(p|X) &amp;= \ln\mathcal{L}(p|X) = \ln \binom{n}{X} + X\ln(p) + (n-X)\ln(1-p) \\
+\dfrac{\partial}{\partial p}L(p|X) &amp;= \dfrac{X}{p} - \dfrac{n-X}{1-p}
+\end{aligned}
+\]</span></p>
+<p>From there, we set the derivative to zero and solve for the parameter.</p>
+<p><span class="math display">\[
+\begin{aligned}
+0 &amp;= \dfrac{x}{\hat{p}} - \dfrac{n-x}{1-\hat{p}} \\
+\dfrac{n-x}{1-\hat{p}} &amp;= \dfrac{n}{\hat{p}} \\
+n\hat{p} - x\hat{p} &amp;= x - x\hat{p} \\
+n\hat{p} &amp;= x \\
+\hat{p} &amp;= \dfrac{x}{n}
+\end{aligned}
+\]</span></p>
+<p>We also want the standard error of our MLE, which is just the square root of the variance.</p>
+<p><span class="math display">\[
+\begin{aligned}
+V\left[ \hat{p} \right] &amp;= V\left[ \dfrac{X}{n} \right] \\
+&amp;= \dfrac{1}{n^2} V\left[ X \right]
+\end{aligned}
+\]</span></p>
+<p>Then since <span class="math inline">\(x\)</span> comes from a Binomial distribution, we know that <span class="math inline">\(V\left[ X \right] = np(1-p)\)</span>, substituting that in results in:</p>
+<p><span class="math display">\[
+\begin{aligned}
+V\left[ \hat{p} \right] &amp;= \dfrac{np(1-p)}{n^2} \\
+&amp;= \dfrac{p(1-p)}{n}
+\end{aligned}
+\]</span></p>
+<p>Finally, a <em>Wald statistic</em> is a statistic of the form:</p>
+<p><span class="math display">\[
+\begin{aligned}
+z = \dfrac{\hat{\theta} - \theta}{se(\hat{\theta})}
+\end{aligned}
+\]</span></p>
+<p>where <span class="math inline">\(\hat{\theta}\)</span> is the MLE. Since we have the MLE and its standard error, the Wald statistic is:</p>
+<p><span class="math display">\[
+\begin{aligned}
+z = \dfrac{\hat{p} - p}{ \sqrt{\dfrac{p(1-p)}{n}} }
+\end{aligned}
+\]</span></p>
+<p>Then, because Wald statistics are asymptotically Normal, we use this statistic to obtain the confidence interval we saw before.</p>
+</div>
+<div id="why-the-common-approach-is-bad" class="section level3">
+<h3>Why the common approach is bad</h3>
+<p>So why should we be looking beyond the basic approach? Because it’s bad. One way to understand that it’s bad is to look at the <em>coverage probability</em> of the confidence interval. If we consider the coverage probability across a range of <span class="math inline">\(p\)</span> values, we’ll see that it often drops below the nominal value, especially so at the tails, where <span class="math inline">\(p\)</span> is close to <span class="math inline">\(0\)</span> or <span class="math inline">\(1\)</span>. The figure below shows the coverage probability for each <span class="math inline">\(p\)</span> (in the interval <span class="math inline">\([0.02,0.98]\)</span>) at a selection of sample sizes.</p>
+<p><img src="/post-stats/2020-11-25-estimating-binomial-proportions-rare-events.en_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>This is a similar pattern as shown in several figures from <a href="https://projecteuclid.org/euclid.ss/1009213286">Brown, Cai, &amp; DasGupta (2001)</a> (which I’ll abbreviate BCD), for example, the bottom-left panel here is the same as their Figure 3, just at a different resolution. We can alternatively switch, to look at a sequence of <span class="math inline">\(n\)</span> for a selection of <span class="math inline">\(p\)</span>.</p>
+<p><img src="/post-stats/2020-11-25-estimating-binomial-proportions-rare-events.en_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Here, the bottom-right figure is the same as their Figure 1. In both figures we see a very disturbing pattern: The coverage probability is usually below the nominal value, sometimes substantially so. Even at <span class="math inline">\(n=100\)</span> or <span class="math inline">\(n=200\)</span>, the coverage probability rarely gets up to the nominal value for any <span class="math inline">\(p\)</span>. This is discussed in more detail in Brown, Cai, &amp; DasGupta (2001), as well as several responses to their paper (which are included in the publication I linked above).</p>
+<p>An in addition to that, they are very jittery. Ideally we’d like to think that the coverage probability is a smooth function, but that’s not the case here. It’s a result of the underlying discreteness of of <span class="math inline">\(X\)</span>, and there are “lucky” and “unlucky” combinations of <span class="math inline">\(n\)</span> and <span class="math inline">\(p\)</span>.</p>
+<p><strong>Aside:</strong> These figures were not generated by simulation, they are exact coverage probabilities. It’s fairly straightforward to come up with the formula. For illustration, I’ll just pick a certain value of <span class="math inline">\(p\)</span>, say <span class="math inline">\(p=0.20\)</span>.
+We need to know the probability that, when <span class="math inline">\(p=0.20\)</span>, the confidence interval we compute will actually contain the value <span class="math inline">\(0.20\)</span>. But <span class="math inline">\(p\)</span> isn’t what the confidence interval formula uses, right? Even if we know that <span class="math inline">\(p=0.20\)</span>, there are many possible values for <span class="math inline">\(\hat{p}\)</span>, which mean there are many possible values of the endpoints for the confidence interval. So to calculate the coverage probability, what we do (or what I did), was:</p>
+<ol style="list-style-type: decimal">
+<li>Set up a vector <span class="math inline">\(X\)</span> which contains the values <span class="math inline">\(0, 1, ..., n\)</span>. This is the sequence of “successes”.</li>
+<li>For each, compute <span class="math inline">\(\hat{p} = X/n\)</span>.</li>
+<li>From <span class="math inline">\(\hat{p}\)</span>, compute the endpoints of the confidence interval.</li>
+<li>For each confidence interval, determine whether the true value of <span class="math inline">\(p\)</span> has been captured.</li>
+<li>Identify the bounds of <span class="math inline">\(X\)</span> which result in “successful” confidence intervals. That is, determine <span class="math inline">\(X_{max}\)</span> and <span class="math inline">\(X_{min}\)</span>, the largest and smallest values of <span class="math inline">\(X\)</span> which produce a confidence interval which captures <span class="math inline">\(p\)</span>. For example, when <span class="math inline">\(p=0.20\)</span>, if <span class="math inline">\(X=60\)</span> and <span class="math inline">\(n=100\)</span>, then the CI is <span class="math inline">\((0.504, 0.696)\)</span>, which does not capture <span class="math inline">\(p\)</span>.</li>
+<li>Compute the probability that <span class="math inline">\(X\)</span> is contained in the interval <span class="math inline">\([X_{min}, X_{max}]\)</span>. Since we know <span class="math inline">\(p\)</span>, this is just a binomial probability: <span class="math inline">\(P( X \leq X_{max} ) - P( X \leq X_{min}-1 )\)</span>. Note we subtract 1, because <span class="math inline">\(X_{min}\)</span> is a valid value, so <span class="math inline">\(X\)</span> needs to be strictly below <span class="math inline">\(X_{min}\)</span> for the interval to fail.</li>
+<li>Repeat steps 1-6 for a sequence of <span class="math inline">\(p\)</span> from some “small” value to some “large” value (as indicated, I chose <span class="math inline">\(0.02\)</span> to <span class="math inline">\(0.98\)</span>).</li>
+</ol>
+<p>Developing this idea and creating the code to produce a plot like the above would probably be a good exercise for a low-level statistics course that includes a probability component.</p>
+<!----------
+
+One reason for the behavior at the tails is because of what happens to the standard error. Remember that we estimate the standard error of $\hat{p}$ with $se(\hat{p}) = \sqrt{\hat{p}(1-\hat{p})/n}.$
+If we think of this as a function of $\hat{p}$, it's basically of the form $y = x(1-x)$ (with $x$ bounded between $0$ and $1$). This function gets maximized when $x=0.5$, and when $x$ is close to $0$ or $1$, the function approaches zero. This means that the standard error of $\hat{p}$ gets arbitrarily close to zero. This shrinks the confidence interval and makes it less likely that we're able to capture the true value of $p$.
+
+---------->
+</div>
+</div>
+<div id="alternatives" class="section level2">
+<h2>Alternatives</h2>
+<p>Now that we’re all convinced that the standard approach has some deficiencies, what are some alternatives? I’m going to talk about three, though two are very similar. For each I’ll try to provide a more intuitive overview, and then as before, dig into a bit of the math.</p>
+<div id="alternative-1-wilson-and-agresi-coull-intervals" class="section level3">
+<h3>Alternative 1: Wilson and Agresi-Coull intervals</h3>
+<p>There are two (very similar) intervals I’ll mention. BCD call them the <em>Wilson</em> interval, and the <em>Agresti-Coull</em> interval. The idea is to use a slightly modified estimator in place of <span class="math inline">\(\hat{p}\)</span>:</p>
+<p><span class="math display">\[
+\tilde{p} = \dfrac{X + \dfrac{\kappa^{2}}{2}}{n + \kappa^{2} }
+\]</span></p>
+<p>In this, in part to reduce notation, I’ve used <span class="math inline">\(\kappa = Z_{\alpha/2}\)</span>, which is what BCD did.</p>
+<p>This may look weird, but it’s actually not that strange. Notice that the general form <span class="math inline">\(X/n\)</span> is still present, but there’s a little bit added to each. And notably, it’s adding precisely half as much to the numerator as to the denominator. The effect this has is like adding a few extra samples, of which half are successes and half are failures. For example, when we select 95% confidence, then <span class="math inline">\(\kappa = 1.96\)</span> and <span class="math inline">\(\kappa^{2} = 3.84\)</span>, so we’re adding approximately 2 to the numerator, and approximately 4 to the denominator (which was the approach suggested by
+<a href="https://www.tandfonline.com/doi/abs/10.1080/00031305.1998.10480550">Agresti &amp; Coull (1998)</a>,
+alternative link on <a href="https://www.jstor.org/stable/2685469">JSTOR</a>). This has an effect of pulling the estimate slightly closer to 0.5, and also prevents it from being exactly zero, which uases problems with the standard error.</p>
+<p>Both the Wilson and Agresi-Coull approach use this as the point estimate, but the standard errors they use are slightly different.</p>
+<p>The Wilson confidence interval uses:</p>
+<p><span class="math display">\[
+se(\tilde{p}) = \left(\dfrac{\sqrt{n}}{n + \kappa^{2}}\right)\sqrt{\hat{p}(1-\hat{p}) + \dfrac{\kappa^{2}}{4n}}
+\]</span></p>
+<p>The Agresi-Coull confidence interval uses:</p>
+<p><span class="math display">\[
+se(\tilde{p}) = \sqrt{\dfrac{\tilde{p}(1-\tilde{p})}{\tilde{n}}}
+\]</span></p>
+<p>where <span class="math inline">\(\tilde{n} = n+\kappa^{2}\)</span>. With <span class="math inline">\(\tilde{n}\)</span>, we could also define <span class="math inline">\(\tilde{X}=X+\kappa\)</span> and write the point estimate as <span class="math inline">\(\tilde{p} = \tilde{X}/\tilde{n}\)</span>. So the Agresi-Coull approach is really just the standard methods after having applied this adjustment of adding an equal number of successes and failures.</p>
+</div>
+<div id="wilson-interval-the-math" class="section level3">
+<h3>Wilson interval: The math</h3>
+<p>Alright, so how do we get these estimators and standard errors? BCD aren’t really focused on the derivation, so we need to go back to the source:
+<a href="https://www.tandfonline.com/doi/abs/10.1080/01621459.1927.10502953">Wilson (1927)</a>
+(alternative: <a href="https://www.jstor.org/stable/2276774">JSTOR link</a>).</p>
+<p>Reading that, Wilson does something interesting. First, he considers the sampling distribution of the sample proportion.</p>
+<p><img src="/post-stats/2020-11-25-estimating-binomial-proportions-rare-events.en_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>In this, <span class="math inline">\(\sigma = \sqrt{p(1-p)/n}\)</span> and <span class="math inline">\(\kappa\)</span> is some constant. He then points out that the probability of some value of <span class="math inline">\(p\)</span> falling outside of the interval is <span class="math inline">\(p \pm \kappa\sigma\)</span> is <span class="math inline">\(P( Z \geq \kappa)\)</span>. The question is then how to extract <span class="math inline">\(p\)</span> from this. What Wilson does is <em>square</em> the distance between the true value <span class="math inline">\(p\)</span> and some sample proportion <span class="math inline">\(\hat{p}\)</span>. And since we know that this distance is (with a probability determined by <span class="math inline">\(\kappa\)</span>), we can equate the two.</p>
+<p><span class="math display">\[
+\left(\hat{p} - p\right)^{2} = \left(\kappa\sigma\right)^2 = \dfrac{\kappa^{2}p(1-p)}{n}
+\]</span></p>
+<p>Small note: Wilson used <span class="math inline">\(\lambda\)</span>, I’m using <span class="math inline">\(\kappa\)</span> because that’s what BCD used. Having set this up Wilson (probably to save notation) sets <span class="math inline">\(t = \kappa^{2}/n\)</span>, and points out that this is a quadratic expression in <span class="math inline">\(p\)</span>, so we can use the quadratic formula to solve it. We first need to expand the square, get everything on one side, and collect like terms.</p>
+<p><span class="math display">\[
+\begin{aligned}
+p^{2} - 2p\hat{p} + \hat{p}^{2} &amp;= tp - tp^{2} \\ 
+0 &amp;= p^{2}\left(1+t\right) - p\left(2\hat{p}+t\right) + \hat{p}^{2}
+\end{aligned}
+\]</span></p>
+<p>Applying the <a href="https://en.wikipedia.org/wiki/Quadratic_formula">quadratic formula</a> with
+<span class="math inline">\(a=(1+t)\)</span>, <span class="math inline">\(b=-(2\hat{p}+t)\)</span>, and <span class="math inline">\(c=\hat{p}^{2}\)</span>
+we get the solution to be:</p>
+<p><span class="math display">\[
+\begin{align}
+p &amp;= \dfrac{2\hat{p} + t \pm \sqrt{  (2\hat{p}+t)^{2} - 4(1+t)\hat{p}^{2}  }}{2(1+t)} \\
+  &amp; \\
+  &amp; \mbox{(some algebra)} \\
+  &amp; \\
+  &amp;= \dfrac{\hat{p} + \dfrac{t}{2} \pm \sqrt{ t\hat{p}(1-\hat{p}) + \dfrac{t^{2}}{4} }}{1+t}
+\end{align}
+\]</span></p>
+<p>I’ve skipped a little algebra, but it’s only a couple lines at most. Once we’re here, we need to recall that <span class="math inline">\(t = \kappa^{2}/n\)</span>, and substitute that back in. I’m going to separate the fraction at the <span class="math inline">\(\pm\)</span>, and pull a <span class="math inline">\(1/n\)</span> out from the denominator - thus multiplying the numerator by <span class="math inline">\(n\)</span> - to cancel some of these hideous fractions-within-fractions.</p>
+<p><span class="math display">\[
+\begin{align}
+p  &amp;= \dfrac{\hat{p} + \dfrac{\kappa^{2}}{2n} \pm \sqrt{ \dfrac{\kappa^{2}}{n}\hat{p}(1-\hat{p}) + \kappa^{2}\dfrac{\kappa^{2}}{4n^{2}} }}{1+\kappa^{2}/n} \\
+  &amp; \\
+  &amp;= \dfrac{x + \dfrac{\kappa^{2}}{2}}{n+\kappa^{2}} \pm \dfrac{\sqrt{ \kappa^{2}n \hat{p}(1-\hat{p}) + \kappa^{2}n\dfrac{\kappa^{2}}{4n} }}{n+\kappa^{2}} \\
+  &amp; \\
+  &amp;= \dfrac{x + \dfrac{\kappa^{2}}{2}}{n+\kappa^{2}} \pm \dfrac{ \kappa\sqrt{n} \sqrt{ \hat{p}(1-\hat{p}) + \dfrac{\kappa^{2}}{4n} }}{n+\kappa^{2}} \\
+  &amp; \\
+  &amp;= \dfrac{x + \dfrac{\kappa^{2}}{2}}{n+\kappa^{2}} \pm \kappa \dfrac{ \sqrt{n}}{n+\kappa^{2}} \sqrt{ \hat{p}(1-\hat{p}) + \dfrac{\kappa^{2}}{4n} } 
+\end{align}
+\]</span></p>
+<p>Note that on line 2, I also multiplied the last term under the radical by <span class="math inline">\(n/n = 1\)</span>. This was to make it “match” the first term in having <span class="math inline">\(\kappa^{2}n\)</span> that could be extracted from the radical. with this, we’ve arrived at the form of the interval I presented originally.</p>
+<p>Remember that <span class="math inline">\(\kappa\)</span> was defined as a quantile from the normal distribution. By expressing the solution as I have, this results has the form of a traditional normal-based confidence interval:</p>
+<p><span class="math display">\[
+\mbox{Estimate} \pm \mbox{Critical Value}\times\mbox{Std Error}
+\]</span></p>
+<p>Agresi and Coull wanted to simplify this a bit, so they used the same estimator, defining:</p>
+<p><span class="math display">\[
+\begin{align}
+\tilde{x} &amp;= x + \kappa^{2}/2 \\
+\tilde{n} &amp;= n + \kappa^{2}   \\
+\tilde{p} &amp;= \tilde{x} / \tilde{n}
+\end{align}
+\]</span></p>
+<p>which is adding some number of trials, evenly split between successes and failures. They then use this <span class="math inline">\(\tilde{p}\)</span> in the “standard” form of the confidence interval. In this way they create a much better-behaving confidence interval, but which is a bit more straightforward and easier to remember than the Wilson interval.</p>
+</div>
+<div id="alternative-2-bayesian-method" class="section level3">
+<h3>Alternative 2: Bayesian method</h3>
+<p>Lately I’ve been going to the Bayesian approach to this problem. This might get slightly more technical if you’re at a lower mathematical level. For Bayesian analysis, we define a likelihood for the data, and a prior for the parameters. In this case, the data are Binomial, and the only parameter is the proportion, for which a Beta distribution works well. So we will assume:</p>
+<p><span class="math display">\[
+\begin{aligned}
+X | p &amp;\sim \mbox{Binomial(n,p)} \\
+p     &amp;\sim \mbox{Beta}(\alpha, \beta)
+\end{aligned}
+\]</span></p>
+<p>Setting <span class="math inline">\(\alpha=\beta=1\)</span> results in a uniform or “flat” prior, meaning we don’t have any initial judgment on whether <span class="math inline">\(p\)</span> is likely to be large or small, all possible values of <span class="math inline">\(p\)</span> are equally likely. Then, if we call the likelihood <span class="math inline">\(L(x|p)\)</span> and the prior <span class="math inline">\(\pi(p)\)</span>, the posterior for <span class="math inline">\(p\)</span> is found by:</p>
+<p><span class="math display">\[
+\pi(p|x) \propto L(x|p)\pi(p)
+\]</span></p>
+<p>So, inserting the Binomial PMF for <span class="math inline">\(L(x|p)\)</span> and the Beta PDF for <span class="math inline">\(\pi(p)\)</span>, we get:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\pi(p|x) &amp;\propto \binom{n}{x}p^{x}(1-p)^{n-x} \times \dfrac{p^{\alpha-1}(1-p)^{\beta-1}}{B(\alpha,\beta)}  \\
+&amp;\propto p^{x - \alpha-1}(1-p)^{n - x + \beta-1}
+\end{aligned}
+\]</span></p>
+<p>Formally, we should be performing some integration, but since we’re really interested in <span class="math inline">\(p\)</span> here, I just want to see what the form of the resulting posterior will look like, and in this case it’s another Beta distribution, specifically, a <span class="math inline">\(\mbox{Beta}(x+\alpha, n-x+\beta)\)</span> distribution.</p>
+<p>With this posterior distribution, we can estimate <span class="math inline">\(p\)</span> in several ways. We can take the mean or median as a point estimate, and we can obtain a credible interval (the Bayesian answer to the confidence interval). For example, say we had a sample of size <span class="math inline">\(n=50\)</span>, and observed <span class="math inline">\(x=1\)</span> occurrences of the event of interest. Then taking <span class="math inline">\(\alpha = \beta = 1\)</span> (which is a uniform prior on <span class="math inline">\(p\)</span>), our posterior would look like below. Note that the x-axis is fairly truncated!</p>
+<p><img src="/post-stats/2020-11-25-estimating-binomial-proportions-rare-events.en_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>The estimate using the Wilson approach with 95% confidence, for reference, would be:</p>
+<p><span class="math display">\[
+\tilde{p} = \dfrac{1 + 1.96^2/2}{50 + 1.96^2} = \dfrac{2.921}{53.84} = 0.0542
+\]</span></p>
+</div>
+</div>
+<div id="comparisons" class="section level2">
+<h2>Comparisons</h2>
+<p>So that’s an overview of three methods for estimating <span class="math inline">\(p\)</span> (both a point estimate and a confidence interval), but how to they compare to each other? We computed the coverage probability before, so let’s follow the same framework and compute the coverage probability for all four intervals. As before, this won’t be a simulation, but exact coverage probabilities.</p>
+<p><img src="/post-stats/2020-11-25-estimating-binomial-proportions-rare-events.en_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>We see here again that the standard interval performs poorly, but now we can see how the alternatives stack up against it. The Agresti-Coull interval tends to have the highest coverage probability, while the Wilson and Bayes intervals are very close (being on top of each other much of the time!).</p>
+<p>In another way of thinking about the intervals, we can consider the <em>expected interval length</em>. Recall when I computed the interval, I’d take a given value of <span class="math inline">\(p\)</span> and <span class="math inline">\(n\)</span>, and compute the interval for all possible values of <span class="math inline">\(x\)</span>. So when I calculated the interval, I also obtained the length of the interval and computed a weighted average (with weight <span class="math inline">\(P(X=x)\)</span>) of the lengths. We see that result below.</p>
+<p><img src="/post-stats/2020-11-25-estimating-binomial-proportions-rare-events.en_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Certainly for smaller sample sizes, the Wilson and Bayes intervals produce shorter intervals (that is: more precision on <span class="math inline">\(p\)</span>). One may be tempted to think that for small <span class="math inline">\(n\)</span> <em>and</em> small <span class="math inline">\(p\)</span> the standard interval is good here, but don’t forget the coverage probability: It drops precipitously at that point! Once we get much beyond <span class="math inline">\(n=100\)</span> there isn’t much difference between the Wilson, Agresti-Coull, and Bayes intervals.</p>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>In this post we explored estimating a Binomial proportion, seeing how the standard method is derived, and why it’s bad, and explored some alternatives (including their derivation). Based on the coverage probabilities and interval lengths, my suggestion would be to use either the Wilson or Bayes intervals - they both have good coverage, and tend to be shorter than the Agresti-Coull interval. The Agresti-Coull has slightly higher coverage probability, but that comes at the expense of a longer interval. That being said, it depends on the behavior you want to see. The Wilson and Bayes intervals seem to have 95% coverage probability <em>on average</em>, while the Agresti-Coull interval seems to maintain <em>at least</em> 95% coverage (or very close to it) throughout.</p>
+</div>

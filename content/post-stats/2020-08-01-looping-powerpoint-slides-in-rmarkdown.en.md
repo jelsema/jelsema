@@ -10,7 +10,6 @@ tags:
   - loop
   - slides
   - child document
-  - rmarkdown
 subtitle: ''
 summary: ''
 authors: []

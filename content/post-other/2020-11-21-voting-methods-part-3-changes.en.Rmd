@@ -1,0 +1,564 @@
+---
+title: 'Voting methods part 3: Tweaking the System'
+author: Casey
+date: '2020-11-21'
+slug: voting-methods-part-3-changes
+categories:
+  - politics
+  - opinion
+tags:
+  - voting
+  - elections
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2020-11-21T17:11:38-07:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+
+## Introduction
+
+This is part 3 of what a 3-part bit on voting and elections.
+
+In [Voting Methods Part 1](https://jelsema.github.io/post-other/voting-methods-part-1-fptp) I described the plurality voting system that's used in the United States, and some problems with it. In [Voting Methods Part 2](https://jelsema.github.io/post-other/voting-methods-part-2-rcv) I talked a bit about some alternatives, including ranked voting and proportional representation. These were both "background" for what I actually wanted to talk about now: Changes that I'd like to see in the electoral process in the United States.
+
+
+While it may seem like there is "an election" in the United States, in reality it's really more like 534 separate elections: 1 president, 100 senators, and 435 house representatives. Well, sort of, only 1/3 of the senate is up for election at any given election, but that doesn't really matter for this discussion.
+
+This post will be structured as follows:
+
+- Describe the current structure of representatives and how they are elected.
+- Describe a bit of the history of why things are the way they are.
+- Talk about some methods of voting, namely to highlight the drawbacks of the existing system.
+- Describe my proposed alternative method of conducting elections.
+
+
+
+```{r, message=FALSE, results="hide", warning=FALSE, echo=FALSE}
+
+knitr::opts_chunk$set( message=FALSE, warning=FALSE, echo=FALSE )
+
+library("tidyverse")
+library("sf")
+library("flextable")
+library("rvest")
+
+
+h1 <- officer::fp_border(color="black", width=2)
+h2 <- officer::fp_border(color="black", width=1)
+h3 <- officer::fp_border(color="black", width=0.5, style="dashed" )
+
+
+nrow_part <- function(x, part){
+  if( is.null(x[[part]]) )
+    0
+  else if( is.null(x[[part]]$dataset) )
+    0
+  else nrow(x[[part]]$dataset)
+}
+
+
+
+theme_zebra2 <- function (x, odd_header = "#CFCFCF", odd_body = "#EFEFEF", 
+    even_header = "white", even_body = "white") 
+{
+    h_nrow <- nrow_part(x, "header")
+    f_nrow <- nrow_part(x, "footer")
+    b_nrow <- nrow_part(x, "body")
+    x <- border_remove(x)
+    x <- padding(x = x, padding = 2, part = "all")
+    x <- align(x = x, align = "center", part = "header")
+    if (h_nrow > 0) {
+        even <- seq_len(h_nrow)%%2 == 0
+        odd <- !even
+        x <- bg(x = x, i = odd, bg = odd_header, part = "header")
+        x <- bg(x = x, i = even, bg = even_header, part = "header")
+        x <- bold(x = x, bold = TRUE, part = "header")
+    }
+    if (f_nrow > 0) {
+        even <- seq_len(f_nrow)%%2 == 0
+        odd <- !even
+        x <- bg(x = x, i = odd, bg = odd_header, part = "footer")
+        x <- bg(x = x, i = even, bg = even_header, part = "footer")
+        x <- bold(x = x, bold = TRUE, part = "footer")
+    }
+    if (b_nrow > 0) {
+        even <- seq_len(b_nrow)%%2 == 0
+        odd <- !even
+        x <- bg(x = x, i = odd, bg = odd_body, part = "body")
+        x <- bg(x = x, i = even, bg = even_body, part = "body")
+    }
+    x <- align_text_col(x, align = "left", header = TRUE)
+    x <- align_nottext_col(x, align = "right", header = TRUE)
+    x
+}
+
+##########
+
+
+get_state_pop <- function(){
+  
+  # Original ... got broken
+  # my_url <- "https://worldpopulationreview.com/states/"
+  # read_tmp <- my_url %>%
+  #   read_html() %>%
+  #   html_nodes(xpath='//*[@id="statesTable"]/div[1]/div/div/div/div/div/div[2]/table') %>%
+  #   html_table()
+  
+  # state_pops <- read_tmp[[1]]
+  # state_pops <- state_pops[ , c(2,3) ]
+  # state_pops[,2] <- as.numeric( str_replace_all( state_pops[,2] , ",", "" ) )
+  # colnames(state_pops) <- c( "State", "population" )
+
+  
+  my_url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population"
+  read_tmp <- my_url %>%
+    read_html() %>%
+    html_nodes(xpath='/html/body/div[3]/div[3]/div[5]/div[1]/table[1]') %>%
+    html_table( fill=TRUE )
+  
+  ## https://www2.census.gov/geo/pdfs/maps-data/maps/reference/us_regdiv.pdf
+  r_pacific      <- c( "Alaska", "California", "Hawaii", "Oregon", "Washington")
+  r_mountain_n     <- c("Idaho", "Montana", "Wyoming")
+  r_mountain_s     <- c("Arizona", "Colorado", "Nevada", "New Mexico", "Utah")
+  
+  r_greatlakes   <- c("Illinois", "Indiana", "Michigan", "Ohio", "Wisconsin")
+  r_midwest      <- c("Iowa", "Kansas", "Minnesota", "Missouri", "Nebraska", "North Dakota", "South Dakota")
+  
+  r_newengland   <- c("Connecticut", "Maine", "Massachusetts", "New Hampshire", "Rhode Island", "Vermont")
+  r_northeast    <- c("Delaware", "District of Columbia", "Maryland", "New Jersey", "New York", "Pennsylvania")
+  r_midsouth     <- c("Kentucky", "North Carolina", "Tennessee",  "Virginia", "West Virginia")
+  
+  r_tola         <- c("Arkansas", "Louisiana", "Oklahoma", "Texas")
+  r_south        <- c("Alabama", "Florida", "Georgia", "Mississippi", "South Carolina", "Puerto Rico" )
+  
+  all_states <- c( r_pacific, r_mountain_n, r_mountain_s, r_greatlakes, r_midwest,
+                   r_newengland, r_northeast, r_midsouth, r_tola, r_south )
+  
+  state_pops <- read_tmp[[1]]
+  state_pops <- state_pops[ , c(3,4) ]
+  colnames(state_pops) <- c( "State", "population" )
+  state_pops <- state_pops %>% filter( State %in% all_states )
+  state_pops[,2] <- as.numeric( str_replace_all( state_pops[,2] , ",", "" ) )
+  colnames(state_pops) <- c( "State", "population" )
+  
+  
+  state_pops <- state_pops %>%
+    mutate(
+      Region = "Unsorted",
+      Region = ifelse( State %in% r_pacific,      "Pacific",  Region ),
+      Region = ifelse( State %in% r_mountain_n,   "Mountain West", Region ),
+      Region = ifelse( State %in% r_mountain_s,   "Southwest", Region ),
+      
+      Region = ifelse( State %in% r_greatlakes,   "Great Lakes",   Region ),
+      Region = ifelse( State %in% r_midwest,      "Midwest",       Region ),
+      
+      Region = ifelse( State %in% r_newengland,   "New England",   Region ),
+      Region = ifelse( State %in% r_northeast,    "Northeast",     Region ),
+      Region = ifelse( State %in% r_midsouth,     "Mid-South",     Region ),
+      
+      Region = ifelse( State %in% r_tola,         "TOLA",          Region ),
+      Region = ifelse( State %in% r_south,        "South",         Region ),
+    )  
+  
+  return( state_pops )
+  
+}
+
+
+```
+
+
+
+## Current Structure
+
+###### Senate
+
+Every state gets 2 senators, regardless of size (by which we mean *population* size). The senators are elected by a state-wide vote. Whoever wins a plurality gets elected.
+
+
+###### House of Representatives
+
+Every state is apportioned some number of representatives based on population, though it's not perfect.
+Originally, each state received a representative for every 30,000 people, so the house grew with the population. The [Reapportionment Act of 1929](https://en.wikipedia.org/wiki/Reapportionment_Act_of_1929) put a cap on the house of 435 members. Furthermore, the [Uniform Congressional District Act of 1967](https://en.wikipedia.org/wiki/United_States_House_of_Representatives) *required* that house representatives be elected from single-member districts. Apparently Hawaii and New Mexico are exempt, though still use single-member districts.
+
+What this means is that each state gets divided into some number of *districts*, which should be approximately equal in population, and there is a race within that district to determine its representative. These races are, like the senate, decided by plurality.
+
+
+###### President
+
+For electing the president, we use the [electoral college](https://en.wikipedia.org/wiki/United_States_Electoral_College) (EC). In this, each state gets a number of electoral votes (EVs): One for each senator, and one for each house representative. Washington DC also gets 3. The states decide how to divvy these EVs between the candidates. Most states use a winner-take-all approach, where the (again, plurality) winner of the popular vote within the state gets *all* of the electoral votes for that state. So winning 0% and winning 49% of a state is equivalent: You get zero EV from that state. This leads to some interesting if rather unlikely examples of how someone could [become president with just 27% of the vote](https://www.npr.org/2016/11/02/500112248/how-to-win-the-presidency-with-27-percent-of-the-popular-vote).
+
+In a slight deviation from the trend, the electors then meet to vote for president and vice president, but a candidate needs to get a *majority* (and *not* simply a plurality) in order to be elected. This has the possibility to trigger some less well known mechanisms in the electoral process, but is a bit beside the point.
+
+
+
+## A Brief History
+
+This system was set up by the original 13 states as a compromise. Back then, we had the Articles of Confederation, which were being reformed. The large states liked the [Virginia Plan](https://en.wikipedia.org/wiki/Virginia_Plan), which allocated representation on the basis of population: Since they had more people, they'd contribute more tax, and should get more say in the government, or so their thinking went. The small states thought this gave too much power to the large states, and instead favored the [New Jersey Plan](https://en.wikipedia.org/wiki/New_Jersey_Plan), which gave every state equal representation. Ultimately the [Connecticut Compromise](https://en.wikipedia.org/wiki/Connecticut_Compromise) came about, which is why we have 2 senators for each state regardless of size, but the house of representatives is (somewhat) proportional to population. Then, to elect the president, they came up with the electoral college. With this method, the election of the president is a balance of equal representation for all states vs the population.
+
+Then the [Reapportionment Act of 1929](https://en.wikipedia.org/wiki/Reapportionment_Act_of_1929) put a cap on the number of house representatives (435), but also ensured all states receive at least one house representative. Originally the senate was supposed to equally weight states, and the house was supposed to be population-based, but with this act the number of representatives was also slightly biased slightly in favor of the small states. Not entirely, but skewed from it's original intent. Consequently, the electoral college also received this skew. Additionally, the [Uniform Congressional District Act of 1967](https://en.wikipedia.org/wiki/United_States_House_of_Representatives) put some further restrictions on the system.
+
+
+
+
+## Personal pipe dreams
+
+
+So how do I think voting should take place? I'll cover the senate and house first, since those are easier.
+
+### Congress
+
+
+###### House of Representatives
+
+
+For the house, I'd like to see proportional representation, probably by a [Single Transferable Vote](https://en.wikipedia.org/wiki/Single_transferable_vote#Pros_and_Cons_of_STV) approach, but really any proportional allocation would be preferable to me.
+
+I'll spare the details here, since I talked about them in Part 2, but something like this could actually give third parties a voice in the government, and serve to reduce the political polarization we see. Polarization wouldn't be completely "solved", since we'd probably wind up with more, smaller, groups that were more homogeneous, but if they wanted any say in running things, they would have to compromise.
+
+However I would like to see the house returned to a better proportional representation, whether it's by a fixed ratio of population, or by something more like the [Wyoming rule](https://en.wikipedia.org/wiki/Wyoming_Rule) where the lowest-population state gets 1 representative, and all other states are allocated representatives in a proportional manner based on relative population. Though instead of the lowest population state getting just one representative, I'd like to see them get 2 or 3, because increasing the number of representatives allows a proportional representation system to better represent the vote of the people.
+
+Note that from what I have seen, the Reapportionment Act of 1929 didn't have a dramatic effect on presidential outcomes, but I find it conceptually preferable to having both chambers somewhat skewed towards low-population states.
+
+
+
+###### Senate
+
+For the senate, I'd like to see ranked choice voting. These are, functionally, single-member races, so proportional representation doesn't make sense. This way, if the "mainstream" party put forth someone really unpopular, voters who ordinarily supported that party could vote for someone else that they find less objectionable. Then as a second choice, they could select the unpopular person, or even the other mainstream party candidate. 
+
+
+
+###### Other Thoughts
+
+Actually, I'm not sure that I'm entirely opposed to an even larger shakeup of the current system. I've seen people complain about the Senate and want to get rid of it altogether. I'm not sure I'd go that far, but I'd like to see the power of the senate reduced somewhat. Currently the Senators vs Population graph looks like this.
+
+
+
+```{r}
+
+
+states <- get_state_pop() %>%
+  filter( !(State %in% c("District of Columbia","Puerto Rico")) ) %>%
+  arrange(population) %>%
+  mutate(
+    cpop = cumsum(population),
+    rcpop = cpop / sum(population),
+    pop_rank = row_number(),
+    senators = pop_rank*2,
+    AntiSenate = 102 - senators
+  )
+
+
+states <- get_state_pop() %>%
+  arrange(population) %>%
+  mutate(
+    cpop = cumsum(population),
+    rcpop = cpop / sum(population),
+    pop_rank = row_number()
+  )
+nosenate <- states %>% filter( State %in% c("District of Columbia","Puerto Rico")  )
+states <- states %>%
+  mutate(
+    pop_rank = ifelse( population >= nosenate[["population"]][1], pop_rank-1, pop_rank ),
+    pop_rank = ifelse( population >= nosenate[["population"]][2], pop_rank-1, pop_rank ),
+    senators = pop_rank*2,
+    AntiSenate = 102 - senators
+  )
+    
+
+
+ggplot( states, aes(x=rcpop, y=senators) ) + 
+  geom_line() + 
+  geom_point() + 
+  labs( y="Number of Senators", x="Percent of Population" ) + 
+  geom_hline( yintercept = 50, linetype="dashed", color="red" ) + 
+  geom_vline( xintercept = 0.5, linetype="dashed", color="red" ) + 
+  scale_x_continuous( labels=scales::label_percent() )
+
+
+
+```
+
+
+
+So half of the senate represents less than 15% of the population of the United States, while over 50% of the population is represented by only 20 senators. Proponents of the equal representation of the senate will say this is a feature, not a bug, because the United States is the union of independent states. I tend to think that the civil war put the final nail in the coffin of that idea. I think having a second chamber of congress to be able to temper legislation and policy is a good idea, but I'm not convinced that the senate in its current implementation and degree of power is the right form of that chamber.
+
+
+
+
+
+### President
+
+
+##### Go with popular vote
+
+For the election of the president, many people are in favor of a popular vote. That's one approach I'm fine with. A common complaint about this is that just a couple of states (or even a couple of cities) will then determine the election and rule everyone else, so the lower population states won't get any representation. After all, doesn't the figure I just made show that? A mere 10 states have 50% of the population.
+
+Well, not really. There are at least three major points that this complaint overlooks.
+
+First, it kind of ignores an important fact: Sure, just 10 states represent 50% of the population. But *that's 50% of the population*. What is a country if not the people who make it up? And, going back to the Calvin and Hobbes example, if half or more of the nation votes for Hobbes, why should should Calvin become president? 
+
+Second, the president is a single person, just one part of the government. The lower-population states still get represented in the form of the house of representatives and the senate. If the small states think that they are not represented by the president because the large states determined him/her, couldn't the large states say the same if the president gets determined by the small states? And if it comes to that, shouldn't a single office holder be more representative of the larger portion of the population?
+
+Third, an most importantly I think, the complaint overlooks the fact that those 10 states represent quite a lot of diversity.
+
+
+```{r}
+
+##
+## Extract votes
+##
+
+############################################################
+## 2012 election
+
+my_url <- "https://en.wikipedia.org/wiki/2012_United_States_presidential_election"
+
+read_tmp <- my_url %>%
+  read_html() %>%
+  html_nodes(xpath='/html/body/div[3]/div[3]/div[5]/div[1]/div[21]/table') %>%
+  html_table( fill=TRUE )
+
+votes2012 <- read_tmp[[1]]
+
+votes2012_02 <- votes2012[ -1 , c(1,3,6) ]
+colnames(votes2012_02) <- c("state", "pct_dem_12", "pct_rep_12" )
+
+votes2012_02 <- votes2012_02 %>% 
+  mutate( state = str_squish(state),
+          state = ifelse( state=="New York[117]", "New York", state ),
+          state = ifelse( state=="Ohio[118]", "Ohio", state )
+  ) %>% 
+  filter(
+    state %in% c("California", "Texas" ,"Florida", "New York", "Pennsylvania", 
+                 "Illinois", "Ohio","Georgia", "North Carolina",  "Michigan")
+  )
+
+############################################################
+## 2016 election
+
+my_url <- "https://en.wikipedia.org/wiki/2016_United_States_presidential_election"
+
+read_tmp <- my_url %>%
+  read_html() %>%
+  html_nodes(xpath='/html/body/div[3]/div[3]/div[5]/div[1]/div[47]/table') %>%
+  html_table( fill=TRUE )
+
+
+votes2016 <- read_tmp[[1]]
+
+votes2016_02 <- votes2016[ -1 , c(1,3,6) ]
+colnames(votes2016_02) <- c("state", "pct_dem_16", "pct_rep_16" )
+
+votes2016_02 <- votes2016_02 %>% 
+  filter(
+    state %in% c("Calif.", "Texas" ,"Fla.", "N.Y.", "Pa.", 
+                 "Ill.", "Ohio","Ga.", "N.C.",  "Mich.")
+  ) %>%
+   mutate(
+     state = recode_factor( state ,
+              "Calif." = "California" , "Texas" = "Texas" ,
+              "Fla."   = "Florida"    , "N.Y." = "New York",
+              "Pa." = "Pennsylvania"  , "Ill." = "Illinois", 
+              "Ohio"="Ohio"           , "Ga."="Georgia", 
+              "N.C."= "North Carolina", "Mich."="Michigan"
+              )
+   )
+
+############################################################
+## 2020 election
+
+my_url <- "https://en.wikipedia.org/wiki/2020_United_States_presidential_election"
+
+read_tmp <- my_url %>%
+  read_html() %>%
+  html_nodes(xpath='/html/body/div[3]/div[3]/div[5]/div[1]/div[41]/table') %>%
+  html_table( fill=TRUE )
+
+votes2020    <- read_tmp[[1]]
+votes2020_02 <- votes2020[ -1 , c(1,3,6) ]
+colnames(votes2020_02) <- c("state", "pct_dem_20", "pct_rep_20" )
+
+
+votes2020_02 <- votes2020_02 %>% 
+  filter(
+    state %in% c("Calif.", "Texas[s]" ,"Florida", "N.Y.[q]", "Pa.", 
+                 "Illinois", "Ohio","Georgia", "N.C.",  "Mich.")
+  ) %>%
+   mutate(
+     state = recode_factor( state ,
+              "Calif."  = "California"     , "Texas[s]" = "Texas" ,
+              "Florida" = "Florida"        , "N.Y.[q]"  = "New York",
+              "Pa."     = "Pennsylvania"   , "Illinois" = "Illinois", 
+              "Ohio"    = "Ohio"           , "Georgia"  = "Georgia", 
+              "N.C."    = "North Carolina" , "Mich."    = "Michigan"
+              )
+   )
+
+
+
+############################################################
+## Combine
+
+
+states_02 <- states %>% filter( pop_rank >= 41 ) %>% 
+  dplyr::select( State, population ) %>% rename( "Pop" = "population" )
+
+vote_results <- votes2012_02 %>% 
+  full_join( votes2016_02 ) %>% 
+  full_join( votes2020_02 ) %>% 
+  rename( "State" = "state"  ) %>%
+  left_join( states_02 ) %>% 
+  mutate(
+    pct_dem_12 = as.numeric( str_replace(pct_dem_12, "%", "") ),
+    pct_dem_16 = as.numeric( str_replace(pct_dem_16, "%", "") ),
+    pct_dem_20 = as.numeric( str_replace(pct_dem_20, "%", "") ),
+    pct_rep_12 = as.numeric( str_replace(pct_rep_12, "%", "") ),
+    pct_rep_16 = as.numeric( str_replace(pct_rep_16, "%", "") ),
+    pct_rep_20 = as.numeric( str_replace(pct_rep_20, "%", "") )
+  ) %>%
+  dplyr::select( State, Pop, everything(.) ) %>% 
+  arrange( desc(Pop))
+
+
+```
+
+
+
+
+
+```{r}
+
+
+states_03 <- states %>% filter( pop_rank >= 41 ) %>%
+  full_join( vote_results ) %>%
+  mutate(
+    result_2020 = ifelse( pct_dem_20 > pct_rep_20, "blue", "red" )
+  )
+
+
+ggplot( states_03, aes(x=rcpop, y=senators) ) + 
+  geom_line() + 
+  geom_point() + 
+  geom_hline( yintercept = 50, linetype="dashed", color="red" ) + 
+  geom_vline( xintercept = 0.5, linetype="dashed", color="red" ) + 
+  ggrepel ::geom_label_repel( data=states_03, aes(label=State, fill=result_2020),
+                              force=15, alpha=0.75 ) + 
+  labs( y="Number of Senators", x="Percent of Population" ) + 
+  scale_x_continuous( labels=scales::label_percent() ) + 
+  scale_fill_manual( values=c("blue"="steelblue3","red"="indianred3") ) + 
+  coord_cartesian( xlim=c(0.25,1), ylim=c(50,100) ) + 
+  theme( legend.position="none")
+
+
+```
+
+Looking at these states (colored by the winner of the 2020 election) we see a mix of traditionally Democratic or Republican leaning states. There is some Pacific coast, some Atlantic coast, some Midwest/Great Lakes, and Texas. It's far from a homogeneous block. Looking at the presidential vote results over several elections, this becomes even more clear.
+
+
+```{r}
+
+############################################################
+## Make the table
+
+
+## Get cell colors
+## cols 3:4
+col2012 <- vote_results[,3] > vote_results[,4]
+blue2012 <- which( col2012 )
+red2012  <- which( !col2012 )
+## cols 5:6
+col2016 <- vote_results[,5] > vote_results[,6]
+blue2016 <- which( col2016 )
+red2016  <- which( !col2016 )
+## cols 7:8
+col2020 <- vote_results[,7] > vote_results[,8]
+blue2020 <- which( col2020 )
+red2020  <- which( !col2020 )
+
+
+vote_results %>% 
+  arrange( desc(Pop) ) %>% 
+  mutate( Pop = format(Pop, big.mark = ","),
+          pct_dem_12 = str_c(pct_dem_12, "%"),
+          pct_rep_12 = str_c(pct_rep_12, "%"),
+          pct_dem_16 = str_c(pct_dem_16, "%"),
+          pct_rep_16 = str_c(pct_rep_16, "%"),
+          gap1=" ", gap2=" ") %>% 
+  dplyr::select( State, Pop, 
+                 pct_dem_12, pct_rep_12, gap1, 
+                 pct_dem_16, pct_rep_16, gap2, 
+                 pct_dem_20, pct_rep_20 ) %>% 
+  flextable() %>% theme_zebra2() %>% 
+  add_header_row( values=c("State", "Pop", "2012", "2012", "", "2016", "2016", "", "2020", "2020") ) %>%
+  set_header_labels( "pct_dem_12"="Dem", "pct_rep_12"="Rep", "gap1"="",
+                     "pct_dem_16"="Dem", "pct_rep_16"="Rep", "gap2"="",
+                     "pct_dem_20"="Dem", "pct_rep_20"="Rep" ) %>%
+  flextable::style( part="header",  
+                    pr_c = officer::fp_cell( background.color="grey80" ) ) %>%
+  bold( part="header" ) %>% 
+  merge_h( part="header" ) %>%  
+  merge_v( part="header" ) %>%  
+  align( part="all", align="center" ) %>% 
+  align( part="header", j=1, align="left" ) %>% 
+  align( part="body", j=1, align="left" ) %>% 
+  align( part="body", j=3:10, align="center" ) %>% 
+  bg( part="body", i=blue2012, j=3:4, bg = "steelblue3" ) %>% 
+  bg( part="body", i=red2012,  j=3:4, bg = "indianred3" ) %>%
+  bg( part="body", i=blue2016, j=6:7, bg = "steelblue3" ) %>% 
+  bg( part="body", i=red2016,  j=6:7, bg = "indianred3" ) %>% 
+  bg( part="body", i=blue2020, j=9:10, bg = "steelblue3" ) %>% 
+  bg( part="body", i=red2020,  j=9:10, bg = "indianred3" ) %>% 
+  border( part="header", i=1, border.top=h1 ) %>% 
+  border( part="header", i=1, j=c(3,4, 6,7, 9,10), border.bottom=h2 ) %>% 
+  border( part="body", i=1, border.top=h2 ) %>% 
+  border( part="body", i=10, border.bottom=h1 ) %>% 
+  autofit()
+  
+
+
+
+
+```
+
+
+Of the 10 states, 6 voted for the same party in 2012 and 2016, while 4 switched. Then from 2016 to 2020, 3 switched. Only 5 of the states had no switches, 2 Republican, 2 Democrat. Additionally, the margins of many of them are quite small, indicating that *within* these states, there is a lot of diversity. Hence, these states are not a monolithic voting bloc either individually or as a set. 
+
+Because of all this, I just don't see the complaint of a couple high-population Democratic states dominating the results as holding water.
+
+
+
+##### Modify the electoral college
+
+Okay, let's say we think about it, and we still don't like the popular vote for president (even switching to ranked choice voting), and for whatever reason are sticking to the electoral college. Could we do better *within* that system? I think so. 
+
+
+Currently, all but two states allocate *all* of their electoral votes to the state's popular vote winner. But this is not required. As one example, there are two states (Maine and Nebraska) which allocate electoral votes on a [per-district basis](https://www.270towin.com/content/split-electoral-votes-maine-and-nebraska/), with only the two extra votes from the senate seats being given to the popular vote winner. When I first heard of this, I thought it was a great idea: By divvying up the EVs more locally, individual districts would be more competitive, and more people would be engaged in the process. However, I've since realized there is a dramatic flaw with this approach. Remember how congressional districts can be gerrymandered? By allocating EVs on a per-district basis, this causes the presidential election to **also be subject to gerrymandering**. I think this is very, very bad, and so I no longer like the idea of district-based electoral votes.
+
+
+Instead, similar to the change I'd like to see with the house, I'm interested in states proportionally allocating their electoral votes to reflect the popular vote within that state. This means that Republicans in "blue states" and Democrats in "red states" don't have their voice drowned out. There are some drawbacks to this idea, however.
+
+First is that all states would need to simultaneously enact this (or it would need to be done at the federal level). Since this method would only help the person who lost the popular vote in a state, which would tend to be the person who lost the popular vote overall. If only one or two large states did this, then the person who lost the popular vote would be *more* likely to win the election.
+
+Second, it opens up the possibility for some EVs to go to third party candidates. While ordinarily I'd be in favor of getting more diverse representation, the current mechanics of the EC means that if there is no *majority*, then the election gets sent to congress. If we're to keep the EC, I'd rather see a bit more effort at that level rather than having the house of representatives decide the president. This would require further changes to the mechanics of elections, perhaps to allow coalitions or negotiations for sharing of power. From my understanding, this is how parliamentary systems work: If no party gets a majority, they need to form a coalition government, so both of those parties get some say in government. 
+I'm not sure how that would work in our current system, but I think it's an idea worth exploring.
+
+The advantage of this approach is that it retains the balance of population-weighted vs equal representation that the current electoral college system employs, and which many people do like. It just changes the allocation of the votes and - if the house is reformed as well - moves the dial a bit on the precise balance of size vs equal.
+
+
+## Summary
+
+So, that's my idea. For senators, a ranked choice ballot should be used. For the house, proportional representation, and for the president either a popular (ranked choice) vote, or failing that a proportional allocation of electoral votes. With these tweaks, I think there could be a substantial reduction in political polarization, as well as a better representation of the will of the people.
+
+Also, as a bit of a fun thing, the website [270towin](https://www.270towin.com/alternative-electoral-college-allocation-methods/) has a tool where you can implement some different methods of allocating electoral votes. I think it's kind of fun to explore.
+
+
+

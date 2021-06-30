@@ -18,5 +18,11 @@ The website can be found at [jelsema.github.io](https://jelsema.github.io)
 
 
 
+# Until I figure out how to fix the "Push" button, use this shell command
+
+  git push -u origin master
+  
+# Go into Website/jelsema, not Website/Main, latter is an archive of sorts.
+
 ---------------------------------------------------------------------->
 

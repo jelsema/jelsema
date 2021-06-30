@@ -1,0 +1,502 @@
+---
+title: 'Voting methods part 2: RCV'
+author: Casey
+date: '2020-11-21'
+slug: voting-methods-part-2-rcv
+categories:
+  - politics
+  - opinion
+tags:
+  - voting
+  - elections
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2020-11-21T17:11:38-07:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+
+## Introduction
+
+This is part 2 a 3-part bit on voting and elections.
+
+As before, the disclaimer that I'm not a political scientist, I am not an expert on the constitution or any other relevant field. I'm commenting here just as an individual. Also, a reminder that CGP Grey's videos [Politics in the Animal Kingdom](https://www.cgpgrey.com/politics-in-the-animal-kingdom) are fantastic, and a much better explanation that I give here.
+
+
+```{r, message=FALSE, results="hide", warning=FALSE, echo=FALSE}
+
+knitr::opts_chunk$set( message=FALSE, warning=FALSE, echo=FALSE )
+
+library("tidyverse")
+library("sf")
+library("flextable")
+
+h1 <- officer::fp_border(color="black", width=2)
+h2 <- officer::fp_border(color="black", width=1)
+h3 <- officer::fp_border(color="black", width=0.5, style="dashed" )
+
+
+nrow_part <- function(x, part){
+  if( is.null(x[[part]]) )
+    0
+  else if( is.null(x[[part]]$dataset) )
+    0
+  else nrow(x[[part]]$dataset)
+}
+
+
+
+theme_zebra2 <- function (x, odd_header = "#CFCFCF", odd_body = "#EFEFEF", 
+    even_header = "white", even_body = "white") 
+{
+    h_nrow <- nrow_part(x, "header")
+    f_nrow <- nrow_part(x, "footer")
+    b_nrow <- nrow_part(x, "body")
+    x <- border_remove(x)
+    x <- padding(x = x, padding = 2, part = "all")
+    x <- align(x = x, align = "center", part = "header")
+    if (h_nrow > 0) {
+        even <- seq_len(h_nrow)%%2 == 0
+        odd <- !even
+        x <- bg(x = x, i = odd, bg = odd_header, part = "header")
+        x <- bg(x = x, i = even, bg = even_header, part = "header")
+        x <- bold(x = x, bold = TRUE, part = "header")
+    }
+    if (f_nrow > 0) {
+        even <- seq_len(f_nrow)%%2 == 0
+        odd <- !even
+        x <- bg(x = x, i = odd, bg = odd_header, part = "footer")
+        x <- bg(x = x, i = even, bg = even_header, part = "footer")
+        x <- bold(x = x, bold = TRUE, part = "footer")
+    }
+    if (b_nrow > 0) {
+        even <- seq_len(b_nrow)%%2 == 0
+        odd <- !even
+        x <- bg(x = x, i = odd, bg = odd_body, part = "body")
+        x <- bg(x = x, i = even, bg = even_body, part = "body")
+    }
+    x <- align_text_col(x, align = "left", header = TRUE)
+    x <- align_nottext_col(x, align = "right", header = TRUE)
+    x
+}
+
+
+```
+
+
+
+
+
+## Alternative voting systems
+
+
+In [Voting Methods Part 1](https://jelsema.github.io/post-other/voting-methods-part-1-fptp) I talked about FPTP / plurality and some problems such as gerrymandering that can arise. So if we don't want a system like that, what are some alternative methods that might address these problems?
+
+
+### Ranked choice voting
+
+Currently, most Americans vote by selecting one candidate from a set as "*The person they vote for.*" But that's not the only way to go about it. Think back to the example with Calvin, Hobbes, and Suzie - every Suzie voter preferred Hobbes over Calvin. We could then say that their *preference* order was: Suzie -> Hobbes -> Calvin. So they could fill out their ballot by *ranking* these candidates, e.g.
+
+
+```{r}
+
+rank_01 <- tibble(
+  Rank      = c( 3, 2, 1),
+  Candidate = c("Calvin", "Hobbes", "Suzie" )
+)
+
+
+rank_01 %>% 
+  flextable() %>% # theme_zebra() %>%
+  theme_zebra2() %>% 
+  align( part="all", align="center" ) %>% 
+  border( part="header", border.top=h1, border.bottom=h1 ) %>%
+  border( part="body"  , i=3, border.bottom=h1 ) %>%
+  set_table_properties( layout="autofit", width=0.25 )
+
+```
+
+
+This way, when counting ballots, if the voter's preferred candidate (in this case, Suzie) does not win, their vote goes to the second most preferred candidate, in this case Hobbes. In this way, it guards against the "wasted vote" because if you vote for someone who has a low chance of winning (like a third party), your vote will still contribute to who ultimately wins the election.
+
+
+There are multiple ways to tally the votes. One way is known as the [Borda count](https://en.wikipedia.org/wiki/Borda_count) (though there are actual multiple ways to implement a Borda count). In the Borda count, each position is assigned some number of points. For a 3-person race, we might assign 3 points for a 1st-place rank, 2 points for a 2nd-place rank, and 1 point for a 3rd-place rank.
+
+
+#### Borda count: Example 1
+
+
+Going back to the example, we'd have a situation that looks like this:
+
+
+```{r}
+
+
+rank_02 <- tibble(
+  Votes = c( "Proportion", "Rank 1", "Rank 2", "Rank 3"       ),
+  CHS   = c( "40%", "Calvin", "Hobbes", "Suzie"  ),
+  HSC   = c( "35%", "Hobbes", "Suzie" , "Calvin" ),
+  SHC   = c( "25%", "Suzie" , "Hobbes", "Calvin" )
+)
+
+rank_02 %>% 
+  flextable() %>% theme_zebra2() %>%
+  align( part="all", align="center" ) %>% 
+  border( part="header", border.top=h1, border.bottom=h1 ) %>%
+  border( part="body"  , i=1, border.bottom=h3 ) %>%
+  border( part="body"  , i=4, border.bottom=h1 ) %>%
+  border( part="body"  , j=1, border.right=h2 ) %>%
+  set_table_properties( layout="autofit", width=0.4 )
+
+
+
+
+
+```
+
+
+This may seem a bit odd. The three columns at the right denote the three unique rankings of candidates that were cast. There are three more possible orders of the preference ranking, which I'll consider in a second example. The numbers at the top represent the proportion of voters who cast a ballot with that order.
+
+For now, I've just extended the votes so that:
+
+- All of Calvin's voters prefer Hobbes to Suzie
+- All of Hobbes' voters prefer Suzie to Calvin.
+- All of Suzie' voters prefer Hobbes to Calvin.
+
+We can see this as a split vote on one side, creating a "spoiler effect."
+
+Just by inspection, we can kind of see that Hobbes is a more broadly popular candidate, right? He's ranked 1st or 2nd, while Calvin has only 1st and 3rd place votes. Applying the Borda count would be a weighted average of the points (1st = 3 points, 2nd = 2 points, 3rd = 1 point), using the proportion of votes at each rank as the weight. For example, to get Suzie's borda count, we took a weighted average of the ranks:
+
+$$
+BC_{S} = (0.40 \times 1) + (0.35 \times 2) + (0.25 \times 3)
+$$
+Applying the same to all of the candidates, we would get the following results:
+
+
+```{r}
+
+borda_count <- function( ballots ){
+  # ballots <- rank_02
+  
+  props_00 <- str_replace( ballots[1,-1], "%", "" )
+  props_01 <- as.numeric( props_00 )/100
+  
+  
+  ballots_00 <- ballots[-1,-1]
+  
+  borda_cand  <- sort( ballots_00[[ colnames(ballots_00)[1]  ]] )
+  borda_count <- rep( 0 , length(borda_cand) )
+  
+  ballots_01 <- as.data.frame(ballots_00)
+  for( ii in 1:nrow(ballots_00) ){
+    ballots_01[ii,] <- str_c( ballots_00[ii,], " = ", ii )
+  }
+  
+  ballots_02 <- apply( ballots_01, 2, FUN="sort" )
+  
+  
+  for( ii in 1:length(borda_cand) ){
+    tally0 <- str_replace( ballots_02[ii,], str_c( borda_cand[ii], " = "), "" )
+    tally1 <- as.numeric( tally0 )
+    points <- length(borda_cand) + 1 - tally1
+    borda_count[ii] <- sum( props_01*points )
+  }
+  
+  borda_counts <- tibble(
+    Candidate = borda_cand,
+    Count     = borda_count
+  )
+  
+  return( borda_counts )
+  
+}
+
+count02 <- borda_count( rank_02 )
+
+
+```
+
+
+
+```{r}
+
+count02  %>% 
+  flextable() %>% theme_zebra2() %>%
+  align( part="all", align="center" ) %>% 
+  border( part="header", border.top=h1, border.bottom=h1 ) %>%
+  border( part="body"  , i=3, border.bottom=h1 ) %>%
+  set_table_properties( layout="autofit", width=0.25 )
+
+```
+
+
+And so Hobbes would be declared the winner of the election.
+
+
+#### Borda count: Example 2
+
+Going to a slightly more complex ballot, let's say that Calvin and Suzie are the "extreme" candidates, while Hobbes is a more centrist candidate. So Hobbes' voters second choice are a bit more split, but Suzie's and Calvin's would primarily go to Hobbes.
+
+
+
+```{r}
+
+
+rank_03 <- tibble(
+  Votes = c( "Proportion", "Rank 1", "Rank 2", "Rank 3"       ),
+  CHS   = c( "35%", "Calvin", "Hobbes", "Suzie"  ),
+  CSH   = c( "5%" , "Calvin", "Suzie", "Hobbes"  ),
+  HCS   = c( "20%", "Hobbes", "Calvin", "Suzie" ),
+  HSC   = c( "15%", "Hobbes", "Suzie" , "Calvin" ),
+  SHC   = c( "20%", "Suzie" , "Hobbes", "Calvin" ),
+  SCH   = c(  "5%", "Suzie" , "Calvin", "Hobbes" )
+)
+
+rank_03 %>% 
+  flextable() %>% theme_zebra2() %>%
+  align( part="all",align="center" ) %>% 
+  border( part="header", border.top=h1, border.bottom=h1 ) %>%
+  border( part="body"  , i=1, border.bottom=h3 ) %>%
+  border( part="body"  , i=4, border.bottom=h1 ) %>%
+  border( part="body"  , j=1, border.right=h2 )  %>%
+  set_table_properties( layout="autofit", width=0.75 )
+
+
+
+```
+
+
+Then applying the Borda count, we would get:
+
+
+```{r}
+
+borda_count( rank_03 ) %>% 
+  flextable() %>% theme_zebra2() %>%
+  align( part="all", align="center" ) %>% 
+  border( part="header", border.top=h1, border.bottom=h1 ) %>%
+  border( part="body"  , i=3, border.bottom=h1 )  %>%
+  set_table_properties( layout="autofit", width=0.25 )
+
+
+```
+
+
+So while Calvin is now a bit more popular than Suzie, Hobbes still wins the election.
+
+
+
+#### Borda count: Example 3
+
+One more example, just because I wrote a function to turn these ballots into a borda count, and I want to get my use out of it, let's say that Hobbes is actually in last place when considering strictly first-place votes. To put that in real terms: People are voting for the "extreme" candidates of their party (Calvin with his G.R.O.S.S. club, Suzie with her tea parties), but have a more moderate/centrist as a backup choice (Hobbes just wants a tuna sandwich for everyone).
+
+
+
+```{r}
+
+
+rank_04 <- tibble(
+  Votes = c( "Proportion", "Rank 1", "Rank 2", "Rank 3"       ),
+  CHS   = c( "45%", "Calvin", "Hobbes", "Suzie"  ),
+  HCS   = c( "5%", "Hobbes", "Calvin", "Suzie" ),
+  HSC   = c( "5%", "Hobbes", "Suzie" , "Calvin" ),
+  SHC   = c( "45%", "Suzie" , "Hobbes", "Calvin" )
+)
+
+
+
+rank_04 %>% 
+  flextable() %>% theme_zebra2() %>%
+  align( part="all",align="center" ) %>% 
+  border( part="header", border.top=h1, border.bottom=h1 ) %>%
+  border( part="body"  , i=1, border.bottom=h3 ) %>%
+  border( part="body"  , i=4, border.bottom=h1 ) %>%
+  border( part="body"  , j=1, border.right=h2 )  %>%
+  set_table_properties( layout="autofit", width=0.5 )
+
+
+```
+
+
+So here, only 10% of voters put Hobbes first, while 90% voted for their preferred "extreme" candidate. But when we tally up the Borda count, we get:
+
+
+```{r}
+
+borda_count( rank_04 ) %>% 
+  flextable() %>% theme_zebra2() %>%
+  align( part="all",align="center" ) %>% 
+  border( part="header", border.top=h1, border.bottom=h1 ) %>%
+  border( part="body"  , i=3, border.bottom=h1 )  %>%
+  set_table_properties( layout="autofit", width=0.25 )
+
+
+```
+
+
+So Hobbes still wins the day, because enough votes from either side thought he was an acceptable backup.
+
+
+Using a Borda count isn't the only way to tally ranked ballots, but it's an example of how to better represent the desires of the voters compared to plurality.
+
+
+
+### Proportional representation
+
+
+Another method that I, at least currently, am interested in is [proportional representation](https://en.wikipedia.org/wiki/Proportional_representation). There are multiple ways to implement this, such as the [Single Transferable Vote](https://en.wikipedia.org/wiki/Single_transferable_vote#Pros_and_Cons_of_STV) or 
+[Mixed-member proportional representation](https://en.wikipedia.org/wiki/Mixed-member_proportional_representation), and some of them can get a little complicated, but the basic idea is that the single-member districts gets pooled together, and the representatives are allocated to (approximately) align with the result of the vote. 
+ 
+
+One simple (possibly naive) way of implementing is to note how much percent of the population each representative is supposed to represent. If there are 10 representatives to elect, then to be elected, a candidate should need 10% of the vote. If no candidates get to the 10% threshold, then the least-popular candidate is removed and (using ranked voting) their votes would be transferred to their next ranked candidate. The CGP Grey video on *Single Transferable Vote* has a nice demonstration of this.
+
+One very attractive feature of this this method is that it renders gerrymandering difficult or impossible, because there are no longer districts to be redrawn: All representatives are elected from a single "district", the state (though I suppose it's possible to have a couple multi-member districts for different regions of larger states like New York, California, Texas, etc). It also enables some more diversity, possibly allowing a third party to get a representative or two. For example, in California with it's 53 house representatives, each represents approximately 1.9% of voters, so depending on the implementation, a party might earn a representative by getting a (very realistic) 2% of the vote (and if this system was implemented, the share of third-party votes could feasible increase).
+
+
+#### STV: Example
+
+Let's say that a district needs 5 representatives - so each represents 20% of the vote - and the vote breakdown is shown below.
+
+
+```{r }
+
+col_vec_4 <- c( "Blue"="#002855", "Gold"="#EAAA00",
+                "Green"="#006633", "Purple"="#330099", "Light Blue"="#99CCFF" )
+
+dat_stv_00 <- tibble(
+  Candidate = rep( c("Blue", "Gold", "Green", "Purple", "Light Blue"), c(35,30,15,15,5) )
+)
+
+dat_stv <- dat_stv_00 %>% 
+  group_by( Candidate ) %>% 
+  summarize( N = n() ) %>% 
+  mutate( Vote = N/100,
+          pct = str_c(N, "%") )
+
+
+
+ggplot( dat_stv , aes(x=Candidate, y=Vote) ) + 
+  geom_bar( stat="identity"  ,aes(fill=Candidate), alpha=0.75 ) + 
+  geom_label( aes(label=pct) ) + 
+  scale_y_continuous( labels=scales::label_percent(), limits=c(0,0.75) ) + 
+  scale_fill_manual( values=col_vec_4 ) + 
+  theme( legend.position = "none" ) + 
+  geom_hline( yintercept=c(0.20,0.40, 0.60), linetype="dashed", color="indianred3" ) + 
+  labs( x="" )
+
+
+
+
+
+```
+
+Clearly Blue and Gold get a representative, right? But then how are the other three representatives allocated? Nobody got 40%, so there's not really an argument that Blue or Gold should get two representatives (yet). One way of going forward is to eliminate take the party that got the least votes and allocate them to their second choice. In this case, let's say that Light Blue voters would have otherwise voted for Blue. So the new picture looks like:
+
+
+
+
+
+```{r }
+
+dat_stv_00 <- tibble(
+  Candidate = rep( c("Blue", "Gold", "Green", "Purple", "Light Blue"), c(35,30,15,15,5) )
+)
+
+dat_stv <- dat_stv_00 %>% 
+  group_by( Candidate ) %>% 
+  summarize( N = n() ) %>% 
+  mutate( Vote = N/100,
+          pct = str_c(N, "%"),
+          Candidate2 = ifelse( Candidate=="Light Blue", "Blue", Candidate )
+  ) %>% 
+  group_by( Candidate2 ) %>% 
+  mutate( Vote2 = sum(N)/100 ,
+          pct   = str_c( sum(N), "%"),
+          Candidate = recode_factor( Candidate, 
+                                      "Light Blue"="Light Blue","Blue"="Blue",  
+                                      "Gold"="Gold", "Green"="Green", "Purple"="Purple"),
+          pct   = ifelse( Candidate=="Light Blue", NA, pct ),
+          Vote2 = ifelse( Candidate=="Blue", Vote2-0.03, Vote2 )) 
+
+
+ggplot( dat_stv , aes(x=Candidate2, y=Vote) ) + 
+  geom_bar( stat="identity"  ,aes(fill=Candidate), alpha=0.75 ) + 
+  geom_label( aes(y=Vote2, label=pct) ) + 
+  scale_y_continuous( labels=scales::label_percent(), limits=c(0,0.75) ) + 
+  scale_fill_manual( values=col_vec_4 ) + 
+  theme( legend.position = "none" ) + 
+  geom_hline( yintercept=c(0.20,0.40, 0.60), linetype="dashed", color="indianred3" ) + 
+  labs( x="" )
+
+
+
+
+
+```
+
+Now with 40% of the vote, it seems reasonable to give Blue two of the five representatives. But we still have two more, with Green and Purple being tied for last place. If they both would have opted for Gold otherwise, then we would add them to Gold's tally, as shown below.
+
+
+
+```{r }
+
+dat_stv_00 <- tibble(
+  Candidate = rep( c("Blue", "Gold", "Green", "Purple", "Light Blue"), c(35,30,15,15,5) )
+)
+
+dat_stv <- dat_stv_00 %>% 
+  group_by( Candidate ) %>% 
+  summarize( N = n() ) %>% 
+  mutate( Vote = N/100,
+          pct = str_c(N, "%"),
+          Candidate2 = Candidate,
+          Candidate2 = ifelse( Candidate2=="Light Blue", "Blue", Candidate2 ),
+          Candidate2 = ifelse( Candidate2 %in% c("Green", "Purple") , "Gold", Candidate2 )
+  ) %>% 
+  group_by( Candidate2 ) %>% 
+  mutate( Vote2 = sum(N)/100 ,
+          pct   = str_c( sum(N), "%"),
+          Candidate = recode_factor( Candidate, 
+                                     "Light Blue"="Light Blue","Blue"="Blue",
+                                     "Green"="Green", "Purple"="Purple",  
+                                     "Gold"="Gold"),
+          pct   = ifelse( Candidate %in% c("Light Blue","Green", "Purple"), NA, pct ),
+          Vote2 = ifelse( Candidate=="Blue", Vote2-0.03, Vote2 ),
+          Vote2 = ifelse( Candidate=="Gold", Vote2-0.03, Vote2 )
+  ) 
+
+
+ggplot( dat_stv , aes(x=Candidate2, y=Vote) ) + 
+  geom_bar( stat="identity"  ,aes(fill=Candidate), alpha=0.75 ) + 
+  geom_label( aes(y=Vote2, label=pct) ) + 
+  scale_y_continuous( labels=scales::label_percent(), limits=c(0,0.75) ) + 
+  scale_fill_manual( values=col_vec_4 ) + 
+  theme( legend.position = "none" ) + 
+  geom_hline( yintercept=c(0.20,0.40, 0.60), linetype="dashed", color="indianred3" ) + 
+  labs( x="" )
+
+
+
+
+
+```
+
+
+Now it seems rational to give Blue two representatives, and give Gold three representatives, thus proportionally allocating the representatives according to the actual vote of the people.
+
+Now, you might say that if Green and Purple are "close" to each other, that they might instead group together and get a representative that's more aligned with them rather than someone from Gold. That's true. What I showed here is just one possible way to go about allocating representatives, and it's knowingly a bit simplistic just to illustrate the point. There are more sophisticated methods for proportional allocation and STV which can help with this.
+
+It's also rather unlikely that vote tallies will wind up being so nicely aligned with whatever threshold is needed to claim one of the representatives, so there will be some degree of mismatch between the vote and the allocation of representatives. Generally speaking, the more representatives in a region (e.g., State), the more able the system is to reflect the makeup of the people.
+
+
+## Summary
+
+In [Voting Methods Part 1](https://jelsema.github.io/post-other/voting-methods-part-1-fptp) I described plurality voting and some problems with it. Here in Part 2 I've talked a bit about some alternatives. These were both "background" for what I actually wanted to talk about in [Voting Methods Part 3](https://jelsema.github.io/post-other/voting-methods-part-3-changes), some changes to the electoral process in the United States that I'd like to see.
+
